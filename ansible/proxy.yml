@@ -1,0 +1,118 @@
+---
+#
+# mkdir /etc/nginx
+# mkdir /root/certs/{HOST}
+# copy over nginx configs.
+# copy over certs
+# chmod certs
+# copy over script
+# chmod script
+# run script
+#
+- name: Install Nginx Proxy
+  hosts: prometheus
+  remote_user: centos
+  become: true
+  become_user: root
+  become_method: sudo
+  vars:
+    certificate_path: /root/certs
+    local_certificate_path: ../certs
+
+  tasks:
+    - name: Load default vars
+      include_vars:
+        dir: ./defaults
+        extensions:
+          - yml
+          - yaml
+    - name: Create Directories.
+      block:
+      - name: mkdir {{ nginx_config_path }}
+        file:
+          path: "{{ nginx_config_path }}"
+          state: directory
+          mode: 0755
+      - name: mkdir {{ nginx_config_path }}/conf.d
+        file:
+          path: "{{ nginx_config_path }}/conf.d"
+          state: directory
+          mode: 0755
+      - name: mkdir /var/log/nginx
+        file:
+          path: /var/log/nginx
+          state: directory
+          mode: 755
+      - name: mkdir {{ certificate_path }}
+        file:
+          path: "{{ certificate_path }}"
+          state: directory
+          mode: 0755
+    - name: Copy Certificates
+      block:
+        - name: Copy fullchain.pem
+          copy:
+            src: "{{ local_certificate_path }}/fullchain.pem"
+            dest: "{{ certificate_path }}/fullchain.pem"
+            owner: root
+            group: root
+            mode: 0444
+          register: cert_fullchain_changed
+        - name: Copy chain.pem
+          copy:
+            src: "{{ local_certificate_path }}/chain.pem"
+            dest: "{{ certificate_path }}/chain.pem"
+            owner: root
+            group: root
+            mode: 0444
+          register: cert_chain_changed
+        - name: Copy privkey.pem
+          copy:
+            src: "{{ local_certificate_path }}/privkey.pem"
+            dest: "{{ certificate_path }}/privkey.pem"
+            owner: root
+            group: root
+            mode: 0444
+          register: cert_privkey_changed
+        - set_fact:
+            certs_changed: "{{ cert_fullchain_changed is changed or cert_chain_changed is changed or cert_privkey_changed is changed }}"
+        - debug: var=certs_changed
+    - name: Copy Configuration
+      block:
+        - name: Copy nginx.conf
+          template:
+            src: ../templates/nginx/nginx.j2
+            dest: "{{ nginx_config_path }}/nginx.conf"
+            owner: root
+            group: root
+            mode: 0644
+          register: nginx_configuration_change
+        - name: Copy .htpasswd
+          copy:
+            src: ../etc/nginx/.htpasswd
+            dest: "{{ nginx_config_path }}/conf.d/.htpasswd"
+            owner: root
+            group: root
+            mode: 0644
+    - name: Start Nginx Proxy
+      block:
+      # create container is there is no container.
+      - name: Create Nginx Proxy container
+        docker_container:
+          name: "{{ nginx_container_name }}"
+          image: "{{ nginx_docker_image }}:{{ nginx_docker_tag }}"
+          ports:
+            - "{{ nginx_port }}:{{ nginx_port }}"
+          volumes:
+            - "{{ nginx_config_path }}:{{ nginx_config_path }}:ro"
+            - "{{ certificate_path }}:{{ certificate_path }}:ro"
+            - /var/log/nginx:/var/log/nginx:rw
+          state: started
+        register: started_nginx_container
+      - set_fact:
+          nginx_started: "{{ started_nginx_container is changed }}"
+      - debug: var=nginx_started
+      # if the configuration changed, we only need to HUP the process.
+      - name: HUP NGINX
+        shell: docker exec {{ nginx_container_name }} kill -HUP 1
+        when: not nginx_started and (nginx_configuration_change is changed or certs_changed)

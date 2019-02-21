@@ -1,0 +1,255 @@
+global:
+  evaluation_interval: {{ prometheus_evaluation_interval }}
+  scrape_interval: {{ prometheus_scrape_interval }}
+  scrape_timeout: {{ prometheus_scrape_timeout }}
+rule_files:
+- /etc/prometheus/rules/rules.yml
+- /etc/prometheus/alerts/alerts.yml
+scrape_configs:
+- job_name: prometheus
+  static_configs:
+  - targets:
+    - localhost:{{ prometheus_port }}
+- job_name: kubernetes-apiservers
+  scheme: https
+  kubernetes_sd_configs:
+    - api_server: {{ kubernetes_server }}:{{ kubernetes_port }}
+      role: endpoints
+      tls_config:
+        ca_file: {{ certificate_path }}/ca.pem
+        cert_file: {{ certificate_path }}/prometheus.crt
+        key_file: {{ certificate_path }}/prometheus.key
+        insecure_skip_verify: false
+  tls_config:
+    ca_file: {{ certificate_path }}/ca.pem
+    cert_file: {{ certificate_path }}/prometheus.crt
+    key_file: {{ certificate_path }}/prometheus.key
+    insecure_skip_verify: false
+  relabel_configs:
+  - action: keep
+    regex: default;kubernetes;https
+    source_labels:
+    - __meta_kubernetes_namespace
+    - __meta_kubernetes_service_name
+    - __meta_kubernetes_endpoint_port_name
+- job_name: kubernetes-nodes
+  scheme: https
+  kubernetes_sd_configs:
+    - api_server: {{ kubernetes_server }}:{{ kubernetes_port }}
+      role: node
+      tls_config:
+        ca_file: {{ certificate_path }}/ca.pem
+        cert_file: {{ certificate_path }}/prometheus.crt
+        key_file: {{ certificate_path }}/prometheus.key
+        insecure_skip_verify: false
+  tls_config:
+    ca_file: {{ certificate_path }}/ca.pem
+    cert_file: {{ certificate_path }}/prometheus.crt
+    key_file: {{ certificate_path }}/prometheus.key
+    insecure_skip_verify: false
+  relabel_configs:
+  - separator: ;
+    regex: __meta_kubernetes_node_label_(.+)
+    replacement: $1
+    action: labelmap
+  - separator: ;
+    regex: (.*)
+    target_label: __address__
+    replacement: {{ kubernetes_server }}:{{ kubernetes_port }}
+    action: replace
+  - source_labels: [__meta_kubernetes_node_name]
+    separator: ;
+    regex: (.+)
+    target_label: __metrics_path__
+    replacement: /api/v1/nodes/${1}/proxy/metrics
+    action: replace
+- job_name: kubernetes-nodes-cadvisor
+  scheme: https
+  kubernetes_sd_configs:
+    - api_server: {{ kubernetes_server }}:{{ kubernetes_port }}
+      role: node
+      tls_config:
+        ca_file: {{ certificate_path }}/ca.pem
+        cert_file: {{ certificate_path }}/prometheus.crt
+        key_file: {{ certificate_path }}/prometheus.key
+        insecure_skip_verify: false
+  tls_config:
+    ca_file: {{ certificate_path }}/ca.pem
+    cert_file: {{ certificate_path }}/prometheus.crt
+    key_file: {{ certificate_path }}/prometheus.key
+    insecure_skip_verify: false
+  relabel_configs:
+  - separator: ;
+    regex: __meta_kubernetes_node_label_(.+)
+    replacement: $1
+    action: labelmap
+  - target_label: __address__
+    replacement: {{ kubernetes_server }}:{{ kubernetes_port }}
+  - source_labels: [__meta_kubernetes_node_name]
+    separator: ;
+    regex: (.+)
+    target_label: __metrics_path__
+    replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+    action: replace
+- job_name: kubernetes-service-endpoints
+  scheme: https
+  kubernetes_sd_configs:
+    - api_server: {{ kubernetes_server }}:{{ kubernetes_port }}
+      role: endpoints
+      tls_config:
+        ca_file: {{ certificate_path }}/ca.pem
+        cert_file: {{ certificate_path }}/prometheus.crt
+        key_file: {{ certificate_path }}/prometheus.key
+        insecure_skip_verify: false
+  tls_config:
+    ca_file: {{ certificate_path }}/ca.pem
+    cert_file: {{ certificate_path }}/prometheus.crt
+    key_file: {{ certificate_path }}/prometheus.key
+    insecure_skip_verify: false
+  relabel_configs:
+  - action: keep
+    regex: true
+    source_labels:
+    - __meta_kubernetes_service_annotation_prometheus_io_scrape
+  - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+    action: replace
+    regex: ()
+    target_label: __meta_kubernetes_pod_annotation_prometheus_io_path
+    replacement: /metrics
+  - target_label: __address__
+    replacement: {{ kubernetes_server }}:{{ kubernetes_port }}
+  - action: replace
+    regex: (.+);(.+);(.+);(.+)
+    source_labels:
+    - __meta_kubernetes_namespace
+    - __meta_kubernetes_service_name
+    - __meta_kubernetes_pod_annotation_prometheus_io_port
+    - __meta_kubernetes_service_annotation_prometheus_io_path
+    target_label: __metrics_path__
+    replacement: /api/v1/namespaces/$1/services/$2:$3/proxy$4
+  - action: labelmap
+    regex: __meta_kubernetes_service_label_(.+)
+  - action: replace
+    source_labels:
+    - __meta_kubernetes_namespace
+    target_label: kubernetes_namespace
+  - action: replace
+    source_labels:
+    - __meta_kubernetes_service_name
+    target_label: kubernetes_name
+  - action: replace
+    source_labels:
+    - __meta_kubernetes_pod_node_name
+    target_label: instance
+    # target_label: kubernetes_node
+- honor_labels: true
+  job_name: prometheus-pushgateway
+  kubernetes_sd_configs:
+  - role: service
+  relabel_configs:
+  - action: keep
+    regex: pushgateway
+    source_labels:
+    - __meta_kubernetes_service_annotation_prometheus_io_probe
+- job_name: kubernetes-services
+  scheme: https
+  kubernetes_sd_configs:
+    - api_server: {{ kubernetes_server }}:{{ kubernetes_port }}
+      role: service
+      tls_config:
+        ca_file: {{ certificate_path }}/ca.pem
+        cert_file: {{ certificate_path }}/prometheus.crt
+        key_file: {{ certificate_path }}/prometheus.key
+        insecure_skip_verify: false
+  tls_config:
+    ca_file: {{ certificate_path }}/ca.pem
+    cert_file: {{ certificate_path }}/prometheus.crt
+    key_file: {{ certificate_path }}/prometheus.key
+    insecure_skip_verify: false
+  metrics_path: /probe
+  params:
+    module:
+    - http_2xx
+  relabel_configs:
+  - action: keep
+    regex: true
+    source_labels:
+    - __meta_kubernetes_service_annotation_prometheus_io_probe
+  - source_labels:
+    - __address__
+    target_label: __param_target
+  - replacement: blackbox
+    target_label: __address__
+  - source_labels:
+    - __param_target
+    target_label: instance
+  - action: labelmap
+    regex: __meta_kubernetes_service_label_(.+)
+  - source_labels:
+    - __meta_kubernetes_namespace
+    target_label: kubernetes_namespace
+  - source_labels:
+    - __meta_kubernetes_service_name
+    target_label: kubernetes_name
+- job_name: kubernetes-pods
+  scheme: https
+  kubernetes_sd_configs:
+    - api_server: {{ kubernetes_server }}:{{ kubernetes_port }}
+      role: pod
+      tls_config:
+        ca_file: {{ certificate_path }}/ca.pem
+        cert_file: {{ certificate_path }}/prometheus.crt
+        key_file: {{ certificate_path }}/prometheus.key
+        insecure_skip_verify: false
+  tls_config:
+    ca_file: {{ certificate_path }}/ca.pem
+    cert_file: {{ certificate_path }}/prometheus.crt
+    key_file: {{ certificate_path }}/prometheus.key
+    insecure_skip_verify: false
+  relabel_configs:
+  - action: keep
+    regex: true
+    source_labels:
+    - __meta_kubernetes_pod_annotation_prometheus_io_scrape
+  - action: replace
+    regex: (.+)
+    replacement: /metrics
+    source_labels:
+    - __meta_kubernetes_pod_annotation_prometheus_io_path
+    target_label: __meta_kubernetes_pod_annotation_prometheus_io_path
+  - action: replace
+    regex: (.+);(.+);(.+);(.+)
+    replacement: /api/v1/namespaces/$1/pods/$2:$3/proxy$4
+    source_labels:
+      - __meta_kubernetes_namespace
+      - __meta_kubernetes_pod_name
+      - __meta_kubernetes_pod_container_port_number
+      - __meta_kubernetes_pod_annotation_prometheus_io_path
+    target_label: __metrics_path__
+  - target_label: __address__
+    replacement: {{ kubernetes_server }}:{{ kubernetes_port }}
+  - action: labelmap
+    regex: __meta_kubernetes_pod_label_(.+)
+  - action: replace
+    source_labels:
+    - __meta_kubernetes_namespace
+    target_label: kubernetes_namespace
+  - action: replace
+    source_labels:
+    - __meta_kubernetes_pod_name
+    target_label: kubernetes_pod_name
+  - action: replace
+    source_labels:
+    - __meta_kubernetes_pod_node_name
+    target_label: kubernetes_node
+    # target_label: instance
+
+alerting:
+  alertmanagers:
+  - scheme: http
+    static_configs:
+    - targets:
+      - "{{ alertmanager_server }}:{{ alertmanager_port }}"
+      labels:
+        app: prometheus
+        component: alertmanager

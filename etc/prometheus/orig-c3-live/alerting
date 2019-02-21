@@ -1,0 +1,4 @@
+alertmanagers:
+- static_configs:
+  - targets:
+    - prom-qa-prometheus-alertmanager:9093

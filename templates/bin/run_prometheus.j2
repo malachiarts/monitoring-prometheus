@@ -1,0 +1,8 @@
+#!/bin/env sh
+
+sudo docker run -p {{ prometheus_port }}:{{ prometheus_port }} \
+	--mount type=bind,source={{ prometheus_config_path }},target={{ prometheus_config_path }} \
+	--mount type=bind,source={{ prometheus_data_path }},target={{ prometheus_data_path }} \
+	--mount type=bind,source={{ certificate_path }},target={{ certificate_path }} \
+	-d {{ prometheus_docker_image }}:{{ prometheus_docker_tag }} \
+	--config.file={{ prometheus_config_path }}/prometheus.yml

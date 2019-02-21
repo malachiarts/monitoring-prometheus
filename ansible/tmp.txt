@@ -1,0 +1,251 @@
+ok: [54.202.32.252] => {
+    "prom_container_present": {
+        "ansible_facts": {
+            "docker_container": {
+                "AppArmorProfile": "",
+                "Args": [
+                    "--config.file=/etc/prometheus/prometheus.yml"
+                ],
+                "Config": {
+                    "AttachStderr": false,
+                    "AttachStdin": false,
+                    "AttachStdout": false,
+                    "Cmd": [
+                        "--config.file=/etc/prometheus/prometheus.yml"
+                    ],
+                    "Domainname": "",
+                    "Entrypoint": [
+                        "/bin/prometheus"
+                    ],
+                    "Env": [
+                        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                    ],
+                    "ExposedPorts": {
+                        "9090/tcp": {}
+                    },
+                    "Hostname": "b8f1f581179e",
+                    "Image": "prom/prometheus:v2.7.1",
+                    "Labels": {
+                        "maintainer": "The Prometheus Authors <prometheus-developers@googlegroups.com>"
+                    },
+                    "OnBuild": null,
+                    "OpenStdin": false,
+                    "StdinOnce": false,
+                    "Tty": false,
+                    "User": "nobody",
+                    "Volumes": {
+                        "/etc/prometheus": {},
+                        "/prometheus": {},
+                        "/var/run/secrets/kubernetes.io/serviceaccount": {}
+                    },
+                    "WorkingDir": "/prometheus"
+                },
+                "Created": "2019-02-19T21:25:58.789035386Z",
+                "Driver": "overlay2",
+                "ExecIDs": null,
+                "GraphDriver": {
+                    "Data": {
+                        "LowerDir": "/var/lib/docker/overlay2/17a3f053583ec8c9dec36f398f5c9f56963f4f02fdb79fff4867b5b33809dba3-init/diff:/var/lib/docker/overlay2/b4cfeaacb007dd79dbd3e31a435e461166bff750a1ad88f7487f3b05097f86c8/diff:/var/lib/docker/overlay2/8ab70da6a3c06e971600bd168d7ccfa956f3678bdaf4c604c48b777e9c4bf367/diff:/var/lib/docker/overlay2/e935f0e167bfdaf192b9cd7a32896c28cff090d61709d0775cd8fb5601b5808b/diff:/var/lib/docker/overlay2/19a808e44bc95f9a3e07d27fbcc2c386cbafd41c73fb8c86b76fa18d986d0f30/diff:/var/lib/docker/overlay2/242ccdac6b477ef250ba14df98f712d6aef4e8bc164500302758ecb372bb2dab/diff:/var/lib/docker/overlay2/9a928552f67277aa55ea426bd95f655baf24cc0b74be6ee8aedfda376ace8b1d/diff:/var/lib/docker/overlay2/9424d217928648558b079aa6aaf9ab4ab7364ae4a26c55f891c1e1f7390c1771/diff:/var/lib/docker/overlay2/93eed851b2f6e034a577a2a7bc4fa749855c2c0bee12ae617956fbe1bf27fb53/diff:/var/lib/docker/overlay2/157eaf930b3c6765656eb71c2ffe4c7634195a11fcf5f41f7eef557a1a28b3f7/diff",
+                        "MergedDir": "/var/lib/docker/overlay2/17a3f053583ec8c9dec36f398f5c9f56963f4f02fdb79fff4867b5b33809dba3/merged",
+                        "UpperDir": "/var/lib/docker/overlay2/17a3f053583ec8c9dec36f398f5c9f56963f4f02fdb79fff4867b5b33809dba3/diff",
+                        "WorkDir": "/var/lib/docker/overlay2/17a3f053583ec8c9dec36f398f5c9f56963f4f02fdb79fff4867b5b33809dba3/work"
+                    },
+                    "Name": "overlay2"
+                },
+                "HostConfig": {
+                    "AutoRemove": false,
+                    "Binds": [
+                        "/prometheus:/prometheus:rw",
+                        "/etc/prometheus:/etc/prometheus:rw",
+                        "/var/run/secrets/kubernetes.io/serviceaccount:/var/run/secrets/kubernetes.io/serviceaccount:ro"
+                    ],
+                    "BlkioDeviceReadBps": null,
+                    "BlkioDeviceReadIOps": null,
+                    "BlkioDeviceWriteBps": null,
+                    "BlkioDeviceWriteIOps": null,
+                    "BlkioWeight": 0,
+                    "BlkioWeightDevice": null,
+                    "CapAdd": null,
+                    "CapDrop": null,
+                    "Cgroup": "",
+                    "CgroupParent": "",
+                    "ConsoleSize": [
+                        0,
+                        0
+                    ],
+                    "ContainerIDFile": "",
+                    "CpuCount": 0,
+                    "CpuPercent": 0,
+                    "CpuPeriod": 0,
+                    "CpuQuota": 0,
+                    "CpuRealtimePeriod": 0,
+                    "CpuRealtimeRuntime": 0,
+                    "CpuShares": 0,
+                    "CpusetCpus": "",
+                    "CpusetMems": "",
+                    "DeviceCgroupRules": null,
+                    "Devices": null,
+                    "DiskQuota": 0,
+                    "Dns": null,
+                    "DnsOptions": null,
+                    "DnsSearch": null,
+                    "ExtraHosts": null,
+                    "GroupAdd": null,
+                    "IOMaximumBandwidth": 0,
+                    "IOMaximumIOps": 0,
+                    "Init": false,
+                    "IpcMode": "shareable",
+                    "Isolation": "",
+                    "KernelMemory": 0,
+                    "Links": null,
+                    "LogConfig": {
+                        "Config": {},
+                        "Type": "json-file"
+                    },
+                    "MaskedPaths": [
+                        "/proc/asound",
+                        "/proc/acpi",
+                        "/proc/kcore",
+                        "/proc/keys",
+                        "/proc/latency_stats",
+                        "/proc/timer_list",
+                        "/proc/timer_stats",
+                        "/proc/sched_debug",
+                        "/proc/scsi",
+                        "/sys/firmware"
+                    ],
+                    "Memory": 0,
+                    "MemoryReservation": 0,
+                    "MemorySwap": 0,
+                    "MemorySwappiness": null,
+                    "NanoCpus": 0,
+                    "NetworkMode": "default",
+                    "OomKillDisable": false,
+                    "OomScoreAdj": 0,
+                    "PidMode": "",
+                    "PidsLimit": 0,
+                    "PortBindings": {
+                        "9090/tcp": [
+                            {
+                                "HostIp": "0.0.0.0",
+                                "HostPort": "9090"
+                            }
+                        ]
+                    },
+                    "Privileged": false,
+                    "PublishAllPorts": false,
+                    "ReadonlyPaths": [
+                        "/proc/bus",
+                        "/proc/fs",
+                        "/proc/irq",
+                        "/proc/sys",
+                        "/proc/sysrq-trigger"
+                    ],
+                    "ReadonlyRootfs": false,
+                    "RestartPolicy": {
+                        "MaximumRetryCount": 0,
+                        "Name": ""
+                    },
+                    "Runtime": "runc",
+                    "SecurityOpt": null,
+                    "ShmSize": 67108864,
+                    "UTSMode": "",
+                    "Ulimits": null,
+                    "UsernsMode": "",
+                    "VolumeDriver": "",
+                    "VolumesFrom": null
+                },
+                "HostnamePath": "/var/lib/docker/containers/b8f1f581179e7d965b59bd418191dc430f52e010180319c1f62d00451639d6d5/hostname",
+                "HostsPath": "/var/lib/docker/containers/b8f1f581179e7d965b59bd418191dc430f52e010180319c1f62d00451639d6d5/hosts",
+                "Id": "b8f1f581179e7d965b59bd418191dc430f52e010180319c1f62d00451639d6d5",
+                "Image": "sha256:690f4cf8dee25c239aa517a16dd73392ecd81485b29cad881d901a99b5b1a303",
+                "LogPath": "/var/lib/docker/containers/b8f1f581179e7d965b59bd418191dc430f52e010180319c1f62d00451639d6d5/b8f1f581179e7d965b59bd418191dc430f52e010180319c1f62d00451639d6d5-json.log",
+                "MountLabel": "",
+                "Mounts": [
+                    {
+                        "Destination": "/var/run/secrets/kubernetes.io/serviceaccount",
+                        "Mode": "ro",
+                        "Propagation": "rprivate",
+                        "RW": false,
+                        "Source": "/var/run/secrets/kubernetes.io/serviceaccount",
+                        "Type": "bind"
+                    },
+                    {
+                        "Destination": "/prometheus",
+                        "Mode": "rw",
+                        "Propagation": "rprivate",
+                        "RW": true,
+                        "Source": "/prometheus",
+                        "Type": "bind"
+                    },
+                    {
+                        "Destination": "/etc/prometheus",
+                        "Mode": "rw",
+                        "Propagation": "rprivate",
+                        "RW": true,
+                        "Source": "/etc/prometheus",
+                        "Type": "bind"
+                    }
+                ],
+                "Name": "/prometheus",
+                "NetworkSettings": {
+                    "Bridge": "",
+                    "EndpointID": "",
+                    "Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "HairpinMode": false,
+                    "IPAddress": "",
+                    "IPPrefixLen": 0,
+                    "IPv6Gateway": "",
+                    "LinkLocalIPv6Address": "",
+                    "LinkLocalIPv6PrefixLen": 0,
+                    "MacAddress": "",
+                    "Networks": {
+                        "bridge": {
+                            "Aliases": null,
+                            "DriverOpts": null,
+                            "EndpointID": "",
+                            "Gateway": "",
+                            "GlobalIPv6Address": "",
+                            "GlobalIPv6PrefixLen": 0,
+                            "IPAMConfig": null,
+                            "IPAddress": "",
+                            "IPPrefixLen": 0,
+                            "IPv6Gateway": "",
+                            "Links": null,
+                            "MacAddress": "",
+                            "NetworkID": "6c2bf46dd838e5d6a984bb7851f11b11470fd1ca93ea1e06b4d92c0b1f1f1084"
+                        }
+                    },
+                    "Ports": {},
+                    "SandboxID": "eaf6b90813f2f719fc74e0502b1363e589cbb2cf5b307d635b9ff639c2a9283a",
+                    "SandboxKey": "/var/run/docker/netns/eaf6b90813f2",
+                    "SecondaryIPAddresses": null,
+                    "SecondaryIPv6Addresses": null
+                },
+                "Path": "/bin/prometheus",
+                "Platform": "linux",
+                "ProcessLabel": "",
+                "ResolvConfPath": "/var/lib/docker/containers/b8f1f581179e7d965b59bd418191dc430f52e010180319c1f62d00451639d6d5/resolv.conf",
+                "RestartCount": 0,
+                "State": {
+                    "Dead": false,
+                    "Error": "",
+                    "ExitCode": 0,
+                    "FinishedAt": "2019-02-20T22:21:13.153114613Z",
+                    "OOMKilled": false,
+                    "Paused": false,
+                    "Pid": 0,
+                    "Restarting": false,
+                    "Running": false,
+                    "StartedAt": "2019-02-19T21:25:59.198639293Z",
+                    "Status": "exited"
+                }
+            }
+        },
+        "changed": false,
+        "failed": false
+    }
+}
+

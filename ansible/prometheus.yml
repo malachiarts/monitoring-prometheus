@@ -1,0 +1,161 @@
+---
+#
+# mkdir /etc/prometheus /etc/prometheus/rules /etc/prometheus/alerts
+# cp config files
+# mkdir /var/run/secrets/kubernetes.io/serviceaccount
+# cp certs
+# chmod 400
+# upload run file.
+# chmod 755
+# exec file!
+#
+- name: Install Prometheus
+  hosts: prometheus
+  remote_user: centos
+  become: true
+  become_user: root
+  become_method: sudo
+  vars:
+    certificate_path: /var/run/secrets/kubernetes.io/serviceaccount
+    # conditionals
+    config_changed: false
+    certs_changed: false
+    path_changed: false
+
+  tasks:
+    - name: Load default vars
+      include_vars:
+        dir: ./defaults
+        extensions:
+          - yml
+          - yaml
+    - name: Create Directories.
+      block:
+      - name: mkdir {{ prometheus_config_path }}
+        file:
+          path: "{{ prometheus_config_path }}"
+          state: directory
+          mode: 0755
+      - name: mkdir {{ prometheus_config_path }}/rules
+        file:
+          path: "{{ prometheus_config_path }}/rules"
+          state: directory
+          mode: 0755
+      - name: mkdir {{ prometheus_config_path }}/alerts
+        file:
+          path: "{{ prometheus_config_path }}/alerts"
+          state: directory
+          mode: 0755
+      # mkdir /var/run/secrets/kubernetes.io/serviceaccount
+      - name: mkdir certs ({{ certificate_path }})
+        file:
+          path: "{{ certificate_path }}"
+          state: directory
+          mode: 0755
+      # endblock
+    - name: Upload Certs.
+      block:
+      # these will need to be pulled from a Vault.
+      # Prometheus runs as nsfnobdy, so this is a compromise for file permissions for the certs
+      - name: copy ca.pem
+        copy:
+          src: ../certs/ca.pem
+          dest: "{{ certificate_path }}/ca.pem"
+          owner: root
+          group: nfsnobody
+          mode: 0440
+      - name: copy ca-key.pem
+        copy:
+          src: ../certs/ca-key.pem
+          dest: "{{ certificate_path }}/ca-key.pem"
+          owner: root
+          group: nfsnobody
+          mode: 0440
+      - name: copy prometheus.crt
+        copy:
+          src: ../certs/prometheus.crt
+          dest: "{{ certificate_path }}/prometheus.crt"
+          owner: root
+          group: nfsnobody
+          mode: 0440
+      - name: copy prometheus.key
+        copy:
+          src: ../certs/prometheus.key
+          dest: "{{ certificate_path }}/prometheus.key"
+          owner: root
+          group: nfsnobody
+          mode: 0440
+    - name: Upload Files.
+      block:
+      # These may be pulled from Git.
+      - name: copy prometheus.yml
+        template:
+          src: ../templates/prometheus/prometheus.j2
+          dest: "{{ prometheus_config_path }}/prometheus.yml"
+          owner: root
+          group: root
+          mode: 0644
+      - name: copy rules.xml
+        copy:
+          src: "..{{ prometheus_config_path }}/rules/rules.yml"
+          dest: "{{ prometheus_config_path }}/rules/rules.yml"
+          owner: root
+          group: root
+          mode: 0644
+      - name: copy alerts.xml
+        copy:
+          src: "..{{ prometheus_config_path }}/alerts/alerts.yml"
+          dest: "{{ prometheus_config_path }}/alerts/alerts.yml"
+          owner: root
+          group: root
+          mode: 0644
+      - name: copy alerting.xml
+        template:
+          src: "../templates/prometheus/alerting.j2"
+          dest: "{{ prometheus_config_path }}/alerts/alerting.yml"
+          owner: root
+          group: root
+          mode: 0644
+    - debug: var=path_changed
+    - name: Start Prometheus
+      block:
+        # - name: Check if Prometheus container is running
+        # docker_container:
+        # name: "{{ prometheus_container_name }}"
+        # state: started
+        # image: "{{ prometheus_docker_image }}:{{ prometheus_docker_tag }}"
+        # register: prom_container_result
+      # create container is there is no container.
+      - name: Create Prometheus container
+        docker_container:
+          name: "{{ prometheus_container_name }}"
+          image: "{{ prometheus_docker_image }}:{{ prometheus_docker_tag }}"
+          ports:
+            - "{{ prometheus_port }}:{{ prometheus_port }}"
+          volumes:
+            - "{{ prometheus_config_path }}:{{ prometheus_config_path }}:rw"
+            - "{{ prometheus_data_path }}:{{ prometheus_data_path }}:rw"
+            - "{{ certificate_path }}:{{ certificate_path }}:ro"
+          command: ["--config.file={{ prometheus_config_path }}/prometheus.yml", "--web.route-prefix=/", "--web.external-url=https://{{ prometheus_fqdn }}"]
+          state: started
+        register: started_prom_container
+      - set_fact:
+          container_exists: "{{ started_prom_container is succeeded }}"
+      - debug: var=container_exists
+      # restart only if the container is running and CERTS or PATHS changed.
+      - name: Restart Prometheus container
+        docker_container:
+          name: "{{ prometheus_container_name }}"
+          image: "{{ prometheus_docker_image }}:{{ prometheus_docker_tag }}"
+          state: started
+          restart: yes
+          ports:
+            - "{{ prometheus_port }}:{{ prometheus_port }}"
+          volumes:
+            - "{{ prometheus_config_path }}:{{ prometheus_config_path }}:rw"
+            - "{{ prometheus_data_path }}:{{ prometheus_data_path }}:rw"
+            - "{{ certificate_path }}:{{ certificate_path }}:ro"
+          command: --config.file={{ prometheus_config_path }}/prometheus.yml --web.route-prefix=/ --web.external-url=https://{{ prometheus_fqdn }}
+        when: started_prom_container is failed and path_changed
+      # HUP Prometheus if CONFGS changed.
+      # sudo docker exec -it prometheus kill -HUP 1

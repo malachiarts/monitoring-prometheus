@@ -1,0 +1,80 @@
+---
+- name: Update system
+  hosts: prometheus
+  remote_user: centos
+  become: true
+  become_user: root
+  become_method: sudo
+
+  tasks:
+  - name: Upgrade all packages
+    yum:
+      name: '*'
+      state: latest
+
+  - name: Install EPEL release
+    yum:
+      name: 'epel-release'
+      state: latest
+
+  - name: Add Docker Repo
+    yum_repository:
+      name: docker-ce
+      description: Docker CE repo
+      gpgcheck: yes
+      gpgkey: https://download.docker.com/linux/centos/gpg
+      baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable/
+      # https://download.docker.com/linux/centos/docker-ce.repo
+
+  - name: Install Docker CE CentOS-specific dependencies
+    block:
+    # region https://docs.docker.com/install/linux/docker-ce/centos/#set-up-the-repository
+    - name: Install yum-utils
+      package:
+        name: yum-utils
+        state: present
+    - name: Install device-mapper-persistent-data
+      package:
+        name: device-mapper-persistent-data
+        state: present
+    - name: Install lvm2
+      package:
+        name: lvm2
+        state: present
+    # Requirement for Alertmanager
+    - name: Install glibc-static
+      package:
+        name: glibc-static
+        state: present
+    # endregion
+    # region https://github.com/docker/for-linux/issues/299#issuecomment-390976518
+
+  - name: Install Docker
+    yum:
+      name: docker-ce-18.06.2.ce
+      state: present
+
+  # sudo systemctl start docker
+  - name: Start & enable service Docker, if not started
+    service:
+      name: docker
+      state: started
+      enabled: yes
+  - name: Python updates
+    block:
+    - name: Install Docker
+      yum:
+        name: python2-pip.noarch
+        state: present
+        # - name: Install pip
+        # easy_install:
+        # name: pip
+        # state: present
+    - name: Install setuptools
+      yum:
+        name: python-setuptools.noarch
+        state: present
+    - name: PIP install docker
+      pip:
+        name: docker
+        state: present

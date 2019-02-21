@@ -1,0 +1,46 @@
+---
+# Edition can be one of: 'ce' (Community Edition) or 'ee' (Enterprise Edition).
+docker_version: '18.06.1'
+docker_edition: 'ce'
+docker_package: "docker-{{docker_version}}{{ docker_edition }}"
+docker_package_state: present
+
+# k8s
+kubernetes_server: tycho-api-elb-1459645966.us-west-2.elb.amazonaws.com
+kubernetes_port: 6443
+
+# Prometheus
+prometheus_fqdn: prometheus.majustfortesting.com
+prometheus_docker_image: prom/prometheus
+prometheus_docker_tag: v2.7.1
+prometheus_container_name: prometheus
+# prometheus_server: "{{ ansible_fqdn }}"
+prometheus_server: "{{ ansible_default_ipv4.address }}"
+prometheus_port: 9090
+prometheus_config_path: /etc/prometheus
+# Mount point created in Terraform
+prometheus_data_path: /prometheus
+prometheus_evaluation_interval: 1m
+prometheus_scrape_interval: 1m
+prometheus_scrape_timeout: 10s
+
+# alert manager
+# optional: {{ ansible_default_ipv4.address }}
+alertmanager_docker_image: prom/alertmanager
+alertmanager_docker_tag: v0.16.1
+alertmanager_container_name: alertmanager
+alertmanager_server: "{{ ansible_default_ipv4.address }}"
+alertmanager_port: 9093
+alertmanager_config_path: /etc/alertmanager
+alertmanager_data_path: /prometheus/alertmanager
+
+alertmanager_slack_name: 'ma_slack'
+alertmanager_slack_channel: '#test_alerts'
+alertmanager_slack_webhook: https://hooks.slack.com/services/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'
+
+# Nginx
+nginx_docker_image: nginx
+nginx_docker_tag: 1.15.8
+nginx_container_name: nginx
+nginx_config_path: /etc/nginx
+nginx_port: 443
