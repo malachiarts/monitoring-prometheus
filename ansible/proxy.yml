@@ -89,7 +89,7 @@
           register: nginx_configuration_change
         - name: Copy .htpasswd
           copy:
-            src: ../etc/nginx/.htpasswd
+            src: ../{{ nginx_config_path }}/.htpasswd
             dest: "{{ nginx_config_path }}/conf.d/.htpasswd"
             owner: root
             group: root

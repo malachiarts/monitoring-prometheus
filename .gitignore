@@ -1,0 +1,6 @@
+certs/**
+metrics-server/**
+terraform/.terraform/**
+tmp/**
+infra.txt
+*.backup
