@@ -81,7 +81,7 @@
       block:
         - name: Copy nginx.conf
           template:
-            src: ../templates/nginx/nginx.j2
+            src: ./templates/nginx/nginx.j2
             dest: "{{ nginx_config_path }}/nginx.conf"
             owner: root
             group: root

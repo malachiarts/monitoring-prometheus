@@ -93,7 +93,7 @@
       # These may be pulled from Git.
       - name: copy prometheus.yml
         template:
-          src: ../templates/prometheus/prometheus.j2
+          src: ./templates/prometheus/prometheus.j2
           dest: "{{ prometheus_config_path }}/prometheus.yml"
           owner: root
           group: root
@@ -117,7 +117,7 @@
         register: config_alerts_changed
       - name: copy alerting.xml
         template:
-          src: "../templates/prometheus/alerting.j2"
+          src: ./templates/prometheus/alerting.j2
           dest: "{{ prometheus_config_path }}/alerts/alerting.yml"
           owner: root
           group: root

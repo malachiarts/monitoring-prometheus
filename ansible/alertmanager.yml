@@ -37,7 +37,7 @@
       # These may be pulled from Git.
       - name: copy alertmanager.yml
         template:
-          src: ../templates/alertmanager/alertmanager.j2
+          src: ./templates/alertmanager/alertmanager.j2
           dest: "{{ alertmanager_config_path }}/alertmanager.yml"
           owner: root
           group: root
