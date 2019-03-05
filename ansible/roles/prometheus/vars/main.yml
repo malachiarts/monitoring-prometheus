@@ -23,6 +23,8 @@ prometheus_data_path: /prometheus
 prometheus_evaluation_interval: 1m
 prometheus_scrape_interval: 1m
 prometheus_scrape_timeout: 10s
+# Same place as Prometheus stores theirs
+certificate_path: /var/run/secrets/kubernetes.io/serviceaccount
 
 # alert manager
 # optional: {{ ansible_default_ipv4.address }}
@@ -38,9 +40,21 @@ alertmanager_slack_name: 'ma_slack'
 alertmanager_slack_channel: '#test_alerts'
 alertmanager_slack_webhook: https://hooks.slack.com/services/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'
 
+# grafana
+grafana_docker_image: grafana/grafana
+grafana_docker_tag: 5.4.3
+grafana_container_name: grafana
+grafana_server: "{{ ansible_default_ipv4.address }}"
+grafana_port: 3000
+
 # Nginx
 nginx_docker_image: nginx
 nginx_docker_tag: 1.15.8
 nginx_container_name: nginx
 nginx_config_path: /etc/nginx
 nginx_port: 443
+
+prometheus_restart_handler: restart prometheus
+alertmanager_restart_handler: restart alertmanager
+grafana_restart_handler: restart grafana
+proxy_restart_handler: restart proxy

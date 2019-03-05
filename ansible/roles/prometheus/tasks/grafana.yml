@@ -1,0 +1,67 @@
+---
+# sudo yum install glibc-static
+# sudo docker run -p 9093:9093 \
+# --mount type=bind,source=/etc/alertmanager,target=/etc/alertmanager \
+# -d prom/alertmanager \
+# --config.file=/etc/alertmanager/alertmanager.yml \
+# --web.external-url=https://prometheus.majustfortesting.com/am \
+# --web.route-prefix=/
+- name: Install Alertmanager
+  hosts: prometheus
+  remote_user: centos
+  become: true
+  become_user: root
+  become_method: sudo
+
+  tasks:
+    - name: Load default vars
+      include_vars:
+        dir: ./defaults
+        extensions:
+          - yml
+          - yaml
+    - name: Create Directories.
+      block:
+      - name: mkdir {{ alertmanager_config_path }}
+        file:
+          path: "{{ alertmanager_config_path }}"
+          state: directory
+          mode: 0755
+      - name: mkdir {{ alertmanager_data_path }}
+        file:
+          path: "{{ alertmanager_data_path }}"
+          state: directory
+          mode: 0775
+    - name: Upload Files.
+      block:
+      # These may be pulled from Git.
+      - name: copy alertmanager.yml
+        template:
+          src: ./templates/alertmanager/alertmanager.j2
+          dest: "{{ alertmanager_config_path }}/alertmanager.yml"
+          owner: root
+          group: root
+          mode: 0644
+        register: configuration_change
+    - name: Start Alertmanager
+      block:
+      # create container is there is no container or restart if there's a change.
+      - name: Create Alertmanager container
+        docker_container:
+          name: "{{ alertmanager_container_name }}"
+          image: "{{ alertmanager_docker_image }}:{{ alertmanager_docker_tag }}"
+          ports:
+            - "{{ alertmanager_port }}:{{ alertmanager_port }}"
+          volumes:
+            - "{{ alertmanager_config_path }}:{{ alertmanager_config_path }}:rw"
+            - "{{ alertmanager_data_path }}:{{ alertmanager_data_path }}:rw"
+          command: [ "--config.file={{ alertmanager_config_path }}/alertmanager.yml", "--storage.path={{ alertmanager_data_path }}", "--web.route-prefix=/", "--web.external-url=https://{{ prometheus_fqdn }}" ]
+          state: started
+        register: started_alertmanager_container
+      - set_fact:
+          alertmanager_started: "{{ started_alertmanager_container is changed }}"
+      - debug: var=alertmanager_started
+      # if the configuration changed, we only need to HUP the process.
+      - name: HUP Alertmanager
+        shell: docker exec {{ alertmanager_container_name }} kill -HUP 1
+        when: not alertmanager_started and configuration_change is changed
