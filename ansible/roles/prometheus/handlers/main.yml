@@ -1,12 +1,12 @@
 ---
 - name: restart prometheus
   become: yes
-  command: sudo docker kill --signal="HUP" {{ prometheus_container_name }}
+  command: docker kill --signal="HUP" {{ prometheus_container_name }}
 
 - name: restart alertmanager
   become: yes
-  command: sudo docker kill --signal="HUP" {{ alertmanager_container_name }}
+  command: docker kill --signal="HUP" {{ alertmanager_container_name }}
 
 - name: restart proxy
   become: yes
-  command: sudo docker kill --signal="HUP" {{ proxy_container_name }}
+  command: docker kill --signal="HUP" {{ proxy_container_name }}
