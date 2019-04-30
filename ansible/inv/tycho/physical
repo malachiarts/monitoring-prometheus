@@ -1,0 +1,15 @@
+[tycho-all:children]
+all-ops
+
+[all-ops:children]
+tycho-ops
+
+[tycho-ops:children]
+prometheusservers
+kubernetesmaster
+
+[prometheusservers]
+prom1.tycho.majustfortesting.com
+
+[kubernetesmaster]
+10.77.1.5

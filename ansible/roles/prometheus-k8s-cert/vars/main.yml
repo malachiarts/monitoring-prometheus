@@ -1,0 +1,14 @@
+---
+instance: tycho
+k8s_user: /CN=system:serviceaccount:default:api-prometheus/O=monitoring
+k8s_cert_path: /etc/kubernetes/ssl
+cert_path: /root/certs
+cert_length_days: 365
+
+key_file: "k8s.{{ instance }}.prometheus.key"
+csr_file: "k8s.{{ instance }}.prometheus.csr"
+crt_file: "k8s.{{ instance }}.prometheus.crt"
+
+key_file_path: "{{ cert_path }}/{{ key_file }}"
+csr_file_path: "{{ cert_path }}/{{ csr_file }}"
+crt_file_path: "{{ cert_path }}/{{ crt_file }}"

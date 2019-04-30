@@ -1,0 +1,8 @@
+---
+- hosts: kubernetesmaster
+  become: true
+  become_user: root
+  become_method: sudo
+  user: centos
+  roles:
+    - prometheus-k8s-cert
