@@ -9,7 +9,7 @@ prometheusservers
 kubernetesmaster
 
 [prometheusservers]
-prom1.tycho.majustfortesting.com
+10.77.101.78
 
 [kubernetesmaster]
 10.77.1.5
