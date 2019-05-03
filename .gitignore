@@ -4,3 +4,9 @@ terraform/.terraform/**
 tmp/**
 infra.txt
 *.backup
+*.log
+*.retry
+maplan
+tmp.txt
+.vault_password
+.terraform
