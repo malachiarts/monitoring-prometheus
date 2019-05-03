@@ -1,5 +1,6 @@
 ---
 instance: tycho
+domain: majustfortesting.com
 # Edition can be one of: 'ce' (Community Edition) or 'ee' (Enterprise Edition).
 docker_version: '18.06.1'
 docker_edition: 'ce'
@@ -8,7 +9,7 @@ docker_package_state: present
 
 # k8s
 # instead of 'live' it should be {{ kubotancluster }}.
-kubernetes_server: kubotan-api-live.{{ instance }}.chromeriver.com
+kubernetes_server: "{{ instance }}-api-test.{{ instance }}.{{ domain }}"
 kubernetes_port: 6443
 
 # Prometheus runs as 65534. So to keep things simple permission-wise,
@@ -18,7 +19,7 @@ app_user: 65534
 app_group: 65534
 
 # Prometheus
-prometheus_fqdn: prom-tycho-test.majustfortesting.com
+prometheus_fqdn: prom-{{ instance }}-test.{{ domain }}
 prometheus_docker_image: prom/prometheus
 prometheus_docker_tag: v2.7.1
 prometheus_container_name: prometheus
@@ -88,6 +89,9 @@ nginx_log_path: /var/log/nginx
 nginx_port: 443
 
 ldap_server: ldaps://ldap.jumpcloud.com:636
+ldap_basedn: ou=Users,o={{ ldap_organization }},dc=jumpcloud,dc=com
+ldap_binddn: uid=ldapservice,ou=Users,o={{ ldap_organization }},dc=jumpcloud,dc=com
+
 ldap_auth_container_name: ldap_auth
 ldap_auth_docker_image: linuxserver/ldap-auth
 ldap_auth_docker_tag: 3.2.0-ls26

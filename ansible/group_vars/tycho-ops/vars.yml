@@ -1,3 +1,4 @@
+ldap_organization: "{{ vault_ldap_organization }}"
 alertmanager:
   slack_token: "{{ vault_alertmanager.slack_token }}"
 

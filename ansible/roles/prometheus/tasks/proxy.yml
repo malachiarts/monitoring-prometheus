@@ -29,8 +29,8 @@
     group: root
     mode: "0440"
   with_items:
-    - "majustfortesting.com.pem"
-    - "majustfortesting.com.key"
+    - "{{ domain }}.pem"
+    - "{{ domain }}.key"
   notify:
     - "{{ proxy_restart_handler }}"
 - name: Copy Configuration for Proxy.

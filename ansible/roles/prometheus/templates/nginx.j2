@@ -39,8 +39,8 @@ http {
     error_log  /var/log/nginx/nginx.error.log;
 
     # SSL best practices from https://www.linode.com/docs/web-servers/nginx/tls-deployment-best-practices-for-nginx/
-    ssl_certificate     {{ nginx_certificate_path }}/star.majustfortesting.com.pem;
-    ssl_certificate_key {{ nginx_certificate_path }}/star.majustfortesting.com.key;
+    ssl_certificate     {{ nginx_certificate_path }}/star.{{ domain }}.pem;
+    ssl_certificate_key {{ nginx_certificate_path }}/star.{{ domain }}.key;
     # ssl_dhparam         /root/certs/dhparam4096.pem;
     ssl_ciphers         EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH;
     ssl_prefer_server_ciphers on;
@@ -130,14 +130,10 @@ http {
       # proxy_set_header X-Ldap-Starttls "true";
 
       # (Required) Set the Base DN
-      # proxy_set_header X-Ldap-BaseDN   "ou=People,dc=malachiarts,dc=com";
-      proxy_set_header X-Ldap-BaseDN   "ou=Users,o=5c4bcb86d8af92375a16a825,dc=jumpcloud,dc=com";
-      # base-dns: ["dc=chromeriver,dc=com"]
-      # bind-dn: ou=People,dc=chromeriver,dc=com
+      proxy_set_header X-Ldap-BaseDN   "{{ ldap_basedn }}";
 
       # (Required) Set the Bind DN
-      # proxy_set_header X-Ldap-BindDN   "uid=grafana,ou=Robots,dc=malachiarts,dc=com";
-      proxy_set_header X-Ldap-BindDN   "uid=ldapservice,ou=Users,o=5c4bcb86d8af92375a16a825,dc=jumpcloud,dc=com";
+      proxy_set_header X-Ldap-BindDN   "{{ ldap_binddn }}";
 
       # (Required) Set the Bind password
       proxy_set_header X-Ldap-BindPass "{{ grafana.ldap_bind_pass }}";
