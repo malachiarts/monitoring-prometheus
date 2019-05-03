@@ -7,6 +7,34 @@
   become: yes
   command: docker kill --signal="HUP" {{ alertmanager_container_name }}
 
+# Grafana requires a little extra motivation.
+- name: restart grafana
+  become: yes
+  command: docker restart {{ grafana_container_name }}
+
 - name: restart proxy
   become: yes
-  command: docker kill --signal="HUP" {{ proxy_container_name }}
+  command: docker kill --signal="HUP" {{ nginx_container_name }}
+
+- name: restart ldap-auth
+  become: yes
+  command: docker restart {{ ldap_auth_container_name }}
+
+- name: Set privileges on provisioned dashboards
+  become: true
+  file:
+    path: "{{ grafana_data_path }}/dashboards"
+    recurse: true
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: 0640
+  listen: "provisioned dashboards changed"
+
+- name: Set privileges on provisioned dashboards directory
+  become: true
+  file:
+    path: "{{ grafana_data_path }}/dashboards"
+    state: directory
+    recurse: false
+    mode: 0755
+  listen: "provisioned dashboards changed"

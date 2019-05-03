@@ -1,4 +1,5 @@
 ---
+instance: tycho
 # Edition can be one of: 'ce' (Community Edition) or 'ee' (Enterprise Edition).
 docker_version: '18.06.1'
 docker_edition: 'ce'
@@ -6,11 +7,18 @@ docker_package: "docker-{{docker_version}}{{ docker_edition }}"
 docker_package_state: present
 
 # k8s
-kubernetes_server: tycho-api-elb-1459645966.us-west-2.elb.amazonaws.com
+# instead of 'live' it should be {{ kubotancluster }}.
+kubernetes_server: kubotan-api-live.{{ instance }}.chromeriver.com
 kubernetes_port: 6443
 
+# Prometheus runs as 65534. So to keep things simple permission-wise,
+# we're running Grafana as 65534.
+# Use IDs for docker container startup.
+app_user: 65534
+app_group: 65534
+
 # Prometheus
-prometheus_fqdn: prometheus.majustfortesting.com
+prometheus_fqdn: prom-tycho-test.majustfortesting.com
 prometheus_docker_image: prom/prometheus
 prometheus_docker_tag: v2.7.1
 prometheus_container_name: prometheus
@@ -19,12 +27,12 @@ prometheus_server: "{{ ansible_default_ipv4.address }}"
 prometheus_port: 9090
 prometheus_config_path: /etc/prometheus
 # Mount point created in Terraform
-prometheus_data_path: /prometheus
+prometheus_data_path: /monitoring/prometheus
 prometheus_evaluation_interval: 1m
 prometheus_scrape_interval: 1m
 prometheus_scrape_timeout: 10s
-# Same place as Prometheus stores theirs
-certificate_path: /var/run/secrets/kubernetes.io/serviceaccount
+# Mirroring path of Kubernetes
+certificate_path: /etc/kubernetes/ssl
 
 # alert manager
 # optional: {{ ansible_default_ipv4.address }}
@@ -34,11 +42,11 @@ alertmanager_container_name: alertmanager
 alertmanager_server: "{{ ansible_default_ipv4.address }}"
 alertmanager_port: 9093
 alertmanager_config_path: /etc/alertmanager
-alertmanager_data_path: /prometheus/alertmanager
+alertmanager_data_path: /monitoring/alertmanager
 
 alertmanager_slack_name: 'ma_slack'
 alertmanager_slack_channel: '#test_alerts'
-alertmanager_slack_webhook: https://hooks.slack.com/services/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'
+alertmanager_slack_webhook: https://hooks.slack.com/services/{{ alertmanager.slack_token }}
 
 # grafana
 grafana_docker_image: grafana/grafana
@@ -46,13 +54,49 @@ grafana_docker_tag: 5.4.3
 grafana_container_name: grafana
 grafana_server: "{{ ansible_default_ipv4.address }}"
 grafana_port: 3000
+grafana_config_path: /etc/grafana
+grafana_data_path: /monitoring/grafana/data
+grafana_log_path: /var/log/grafana
+grafana_dashboards_path: "{{ grafana_data_path }}/dashboards"
+grafana_provisioning_synced: false
+
+grafana_datasources:
+  - name: "Prometheus"
+    type: "prometheus"
+    orgId: 1
+    access: "proxy"
+    url: "http://{{ prometheus_server }}:{{ prometheus_port }}"
+    basicAuth: false
+    basicAuthUser: ""
+    basicAuthPassword: ""
+    isDefault: true
+    readOnly: false
+    jsonData:
+      httpMethod: "GET"
+      keepCookies: []
+      tlsAuth: false
+      tlsAuthWithCACert: false
+      tlsSkipVerify: true
 
 # Nginx
 nginx_docker_image: nginx
 nginx_docker_tag: 1.15.8
 nginx_container_name: nginx
 nginx_config_path: /etc/nginx
+nginx_certificate_path: /root/certs
+nginx_log_path: /var/log/nginx
 nginx_port: 443
+
+ldap_server: ldaps://ldap.jumpcloud.com:636
+ldap_auth_container_name: ldap_auth
+ldap_auth_docker_image: linuxserver/ldap-auth
+ldap_auth_docker_tag: 3.2.0-ls26
+ldap_auth_server: "{{ ansible_default_ipv4.address }}"
+ldap_auth_port: 8888
+ldap_auth_login_port: 9000
+ldap_auth_config_path: /etc/openldap
+ldap_auth_certs_path: "{{ ldap_auth_config_path }}/cacerts"
+ldap_auth_script_path: "/usr/local/bin/{{ ldap_auth_container_name }}"
 
 prometheus_restart_handler: restart prometheus
 alertmanager_restart_handler: restart alertmanager

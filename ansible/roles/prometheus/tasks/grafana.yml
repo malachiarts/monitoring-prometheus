@@ -1,67 +1,46 @@
 ---
-# sudo yum install glibc-static
-# sudo docker run -p 9093:9093 \
-# --mount type=bind,source=/etc/alertmanager,target=/etc/alertmanager \
-# -d prom/alertmanager \
-# --config.file=/etc/alertmanager/alertmanager.yml \
-# --web.external-url=https://prometheus.majustfortesting.com/am \
-# --web.route-prefix=/
-- name: Install Alertmanager
-  hosts: prometheus
-  remote_user: centos
-  become: true
-  become_user: root
-  become_method: sudo
+- name: Clean dashboards path
+  file:
+    state: absent
+    path: "{{ grafana_dashboards_path }}/"
 
-  tasks:
-    - name: Load default vars
-      include_vars:
-        dir: ./defaults
-        extensions:
-          - yml
-          - yaml
-    - name: Create Directories.
-      block:
-      - name: mkdir {{ alertmanager_config_path }}
-        file:
-          path: "{{ alertmanager_config_path }}"
-          state: directory
-          mode: 0755
-      - name: mkdir {{ alertmanager_data_path }}
-        file:
-          path: "{{ alertmanager_data_path }}"
-          state: directory
-          mode: 0775
-    - name: Upload Files.
-      block:
-      # These may be pulled from Git.
-      - name: copy alertmanager.yml
-        template:
-          src: ./templates/alertmanager/alertmanager.j2
-          dest: "{{ alertmanager_config_path }}/alertmanager.yml"
-          owner: root
-          group: root
-          mode: 0644
-        register: configuration_change
-    - name: Start Alertmanager
-      block:
-      # create container is there is no container or restart if there's a change.
-      - name: Create Alertmanager container
-        docker_container:
-          name: "{{ alertmanager_container_name }}"
-          image: "{{ alertmanager_docker_image }}:{{ alertmanager_docker_tag }}"
-          ports:
-            - "{{ alertmanager_port }}:{{ alertmanager_port }}"
-          volumes:
-            - "{{ alertmanager_config_path }}:{{ alertmanager_config_path }}:rw"
-            - "{{ alertmanager_data_path }}:{{ alertmanager_data_path }}:rw"
-          command: [ "--config.file={{ alertmanager_config_path }}/alertmanager.yml", "--storage.path={{ alertmanager_data_path }}", "--web.route-prefix=/", "--web.external-url=https://{{ prometheus_fqdn }}" ]
-          state: started
-        register: started_alertmanager_container
-      - set_fact:
-          alertmanager_started: "{{ started_alertmanager_container is changed }}"
-      - debug: var=alertmanager_started
-      # if the configuration changed, we only need to HUP the process.
-      - name: HUP Alertmanager
-        shell: docker exec {{ alertmanager_container_name }} kill -HUP 1
-        when: not alertmanager_started and configuration_change is changed
+- name: Create Directories for Grafana
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: 0755
+  with_items:
+    - "{{ grafana_config_path }}"
+    - "{{ grafana_config_path }}/provisioning"
+    - "{{ grafana_config_path }}/provisioning/dashboards"
+    - "{{ grafana_config_path }}/provisioning/datasources"
+    - "{{ grafana_data_path }}"
+    - "{{ grafana_dashboards_path }}"
+    - "{{ grafana_log_path }}"
+
+- name: Upload Files for Grafana
+  template:
+    src: grafana.ini.j2
+    dest: "{{ grafana_config_path }}/grafana.ini"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - "{{ grafana_restart_handler }}"
+
+- name: Starting Grafana
+  docker_container:
+    name: "{{ grafana_container_name }}"
+    user: "{{ app_user }}:{{ app_group }}"
+    image: "{{ grafana_docker_image }}:{{ grafana_docker_tag }}"
+    ports:
+      - "{{ grafana_port }}:{{ grafana_port }}"
+    volumes:
+      - "{{ grafana_config_path }}:{{ grafana_config_path }}:rw"
+      - "{{ grafana_data_path }}:/var/lib/grafana:rw"
+      - "{{ grafana_log_path }}:{{ grafana_log_path }}:rw"
+    # env:
+    #   GF_PATHS_CONFIG: "/monitoring/grafana/grafana.ini"
+    state: started

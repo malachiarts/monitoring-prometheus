@@ -1,0 +1,29 @@
+---
+- name: copy grafana dashboards
+  become: true
+  copy:
+    src: "{{ item }}"
+    dest: "{{ grafana_dashboards_path }}/{{ item | basename }}"
+  with_fileglob:
+    - "grafana/dashboards/*.json"
+  run_once: true
+  notify: "provisioned dashboards changed"
+
+- name: Create/Update Grafana dashboards file
+  become: true
+  copy:
+    dest: "{{ grafana_config_path }}/provisioning/dashboards/ansible.yml"
+    content: |
+      apiVersion: 1
+      providers:
+       - name: 'default'
+         orgId: 1
+         folder: ''
+         type: file
+         options:
+           path: "/var/lib/grafana/dashboards"
+    backup: false
+    owner: root
+    group: "{{ app_group }}"
+    mode: 0640
+  notify: "provisioned dashboards changed"

@@ -1,65 +1,76 @@
 ---
-- name: Update system
-  hosts: prometheus
-  remote_user: centos
-  become: true
-  become_user: root
-  become_method: sudo
+# - name: Upgrade all packages
+# yum:
+# name: '*'
+# state: latest
 
-  tasks:
-  - name: Upgrade all packages
+- name: Install EPEL release
+  yum:
+    name: 'epel-release'
+    state: latest
+
+- name: Add Docker Repo
+  yum_repository:
+    name: docker-ce
+    description: Docker CE repo
+    gpgcheck: yes
+    gpgkey: https://download.docker.com/linux/centos/gpg
+    baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable/
+    enabled: yes
+    # https://download.docker.com/linux/centos/docker-ce.repo
+
+- name: Install Docker CE CentOS-specific dependencies
+  block:
+  # region https://docs.docker.com/install/linux/docker-ce/centos/#set-up-the-repository
+  - name: Install libraries for Docker & Alertmanager
     yum:
-      name: '*'
+      name:
+        - logrotate
+        - yum-utils
+        - device-mapper-persistent-data
+        - lvm2
+        - glibc-static
+        - python2-pip.noarch
+        - python-setuptools.noarch
+        - python-devel.x86_64
+        - openldap-devel.x86_64
+        - openssl-libs.x86_64
+        - gcc
       state: latest
+      enablerepo: extras
+  # endregion
+  # region https://github.com/docker/for-linux/issues/299#issuecomment-390976518
 
-  - name: Install EPEL release
-    yum:
-      name: 'epel-release'
-      state: latest
+- name: Install Docker
+  yum:
+    name: docker-ce-18.06.3.ce
+    state: installed
 
-  - name: Add Docker Repo
-    yum_repository:
-      name: docker-ce
-      description: Docker CE repo
-      gpgcheck: yes
-      gpgkey: https://download.docker.com/linux/centos/gpg
-      baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable/
-      # https://download.docker.com/linux/centos/docker-ce.repo
+# sudo systemctl start docker
+- name: Start & enable service Docker
+  service:
+    name: docker
+    state: started
+    enabled: yes
 
-  - name: Install Docker CE CentOS-specific dependencies
-    block:
-    # region https://docs.docker.com/install/linux/docker-ce/centos/#set-up-the-repository
-    - name: Install libraries for Docker & Alertmanager
-      yum:
-        name:
-          - yum-utils
-          - device-mapper-persistent-data
-          - lvm2
-          - glibc-static
-        state: present
-    # endregion
-    # region https://github.com/docker/for-linux/issues/299#issuecomment-390976518
+# python-ldap requres
+# - gcc
+# - openssl-libs
+# - openldap-devel
+# - python-devel
+- name: PIP install docker & python-ldap
+  pip:
+    name:
+      - docker
+      - python-ldap
+    state: present
 
-  - name: Install Docker
-    yum:
-      name: docker-ce-18.06.2.ce
-      state: present
-
-  # sudo systemctl start docker
-  - name: Start & enable service Docker, if not started
-    service:
-      name: docker
-      state: started
-      enabled: yes
-  - name: Python updates for Ansible
-    block:
-    - name: Install PIP & Setuptools
-      yum:
-        name:
-          - python2-pip.noarch
-          - python-setuptools.noarch
-        state: present
-    - name: PIP install docker
-      pip:
-        name: docker
-        state: present
+- name: Logrotate for NGINX and Grafana
+  template:
+    src: "{{ item }}"
+    dest: "/etc/logrotate.d/{{ item | basename }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_fileglob:
+    - "../templates/logrotate.d/*"

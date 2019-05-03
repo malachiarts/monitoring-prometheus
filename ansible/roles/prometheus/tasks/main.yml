@@ -1,5 +1,32 @@
 ---
+- include: system.yml
 - include: prometheus.yml
-# - include: alertmanager.yml
-# - include: grafana.yml
-# - include: proxy.yml
+- include: alertmanager.yml
+- include: grafana.yml
+  tags:
+    - grafana_install
+    - grafana_configure
+
+- name: Wait for grafana to start
+  wait_for:
+    host: "{{ grafana_server }}"
+    port: "{{ grafana_port }}"
+  tags:
+    - grafana_install
+    - grafana_configure
+    - grafana_datasources
+    - grafana_dashboards
+
+- include: grafana/datasources.yml
+  when: grafana_datasources != []
+  tags:
+    - grafana_configure
+    - grafana_datasources
+
+- include: grafana/dashboards.yml
+  tags:
+    - grafana_configure
+    - grafana_dashboards
+
+- include: proxy.yml
+- include: ldap-auth.yml

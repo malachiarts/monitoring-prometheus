@@ -1,0 +1,6 @@
+alertmanager:
+  slack_token: "{{ vault_alertmanager.slack_token }}"
+
+grafana:
+  admin_password: "{{ vault_grafana.admin_password }}"
+  ldap_bind_pass: "{{ vault_grafana.ldap_bind_pass }}"

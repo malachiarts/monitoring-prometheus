@@ -1,0 +1,13 @@
+{{ nginx_log_path }}/*.log {
+        daily
+        missingok
+        rotate 52
+        compress
+        delaycompress
+        notifempty
+        create 644 {{ app_user }} {{ app_group }}
+        sharedscripts
+        postrotate
+                /usr/bin/docker kill --signal "HUP" {{ nginx_container_name }}
+        endscript
+}

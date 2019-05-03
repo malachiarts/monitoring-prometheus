@@ -4,14 +4,16 @@
 # X Phase 3: Move it to HTTPS.
 # - Phase 4: Move auth to LDAP. 
 #
-worker_processes 1;
+worker_processes 4;
 
 events {
   worker_connections 1024;
 }
 
 http {
-  # These will use internal HOST IPs/FQDN so container can talk to container.
+  proxy_cache_path {{ nginx_log_path }}/cache/ keys_zone=auth_cache:10m;
+
+  # These will use internal HOST IPs so container can talk to container.
   upstream prometheus {
     server {{ prometheus_server }}:{{ prometheus_port }};
     keepalive 75;
@@ -19,6 +21,13 @@ http {
   upstream alertmanager {
     server {{ alertmanager_server }}:{{ alertmanager_port }};
     keepalive 75;
+  }
+  upstream grafana {
+    server {{ grafana_server }}:{{ grafana_port }};
+    keepalive 75;
+  }
+  upstream auth {
+        server {{ ldap_auth_server }}:{{ ldap_auth_login_port }};
   }
 
   server {
@@ -30,8 +39,8 @@ http {
     error_log  /var/log/nginx/nginx.error.log;
 
     # SSL best practices from https://www.linode.com/docs/web-servers/nginx/tls-deployment-best-practices-for-nginx/
-    ssl_certificate     /root/certs/fullchain.pem;
-    ssl_certificate_key /root/certs/privkey.pem;
+    ssl_certificate     {{ nginx_certificate_path }}/star.majustfortesting.com.pem;
+    ssl_certificate_key {{ nginx_certificate_path }}/star.majustfortesting.com.key;
     # ssl_dhparam         /root/certs/dhparam4096.pem;
     ssl_ciphers         EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH;
     ssl_prefer_server_ciphers on;
@@ -39,14 +48,14 @@ http {
     ssl_session_cache   shared:SSL:10m;
     ssl_session_timeout 10m;
 
-    ssl_stapling            on;
-    ssl_stapling_verify     on;
-    ssl_trusted_certificate /root/certs/chain.pem;
+    # ssl_stapling            on;
+    # ssl_stapling_verify     on;
+    # ssl_trusted_certificate /root/certs/chain.pem;
 
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
-    auth_basic           "Restricted Area";
-    auth_basic_user_file /etc/nginx/conf.d/.htpasswd;
+    # auth_basic           "Restricted Area";
+    # auth_basic_user_file /etc/nginx/conf.d/.htpasswd;
 
     proxy_set_header   Host              $http_host;   # required for docker client's sake
     proxy_set_header   X-Real-IP         $remote_addr; # pass on real client's IP
@@ -57,15 +66,109 @@ http {
 
     # Proxy to Prometheus UI.
     location ^~ / {
+      auth_request      /auth-proxy;
+      error_page 401 =200 /login;
+
       proxy_pass        http://prometheus;
       # Necessary for redirects. Was getting too many redirects before.
       proxy_redirect    http://prometheus/    https://$http_host/;
     }
     # Proxy to Alertmanager UI.
     location ^~ /am {
-      rewrite ^/am/(.*)$ /$1 break;
+      auth_request      /auth-proxy;
+      error_page 401 =200 /login;
+
+      rewrite ^/am/?(.*)$ /$1 break;
       proxy_pass        http://alertmanager;
       proxy_redirect    http://alertmanager/    https://$http_host/;
+    }
+    # Proxy to Grafana UI
+    location ^~ /grafana {
+      auth_request      /auth-proxy;
+      error_page 401 =200 /login;
+
+      rewrite ^/grafana/?(.*)$ /$1 break;
+
+      auth_request_set $user $upstream_http_LDAPUser;
+      proxy_set_header X-WEBAUTH-USER $user;
+      # Empty out Authorization header or Grafana will say basic auth failed.
+      proxy_set_header Authorization "";
+      proxy_pass        http://grafana;
+      proxy_redirect    http://grafana/    https://$http_host/;
+    }
+
+    location /login {
+      proxy_pass http://auth/login;
+      # Login service returns a redirect to the original URI
+      # and sets the cookie for the ldap-auth daemon
+      proxy_set_header X-Target $request_uri;
+    }
+
+    location = /auth-proxy {
+      internal;
+
+      # The ldap-auth daemon listens on port 8888, as set
+      # in nginx-ldap-auth-daemon.py.
+      # Change the IP address if the daemon is not running on
+      # the same host as NGINX/NGINX Plus.
+      proxy_pass http://{{ ldap_auth_server }}:{{ ldap_auth_port }};
+
+      proxy_pass_request_body off;
+      proxy_set_header Content-Length "";
+      proxy_cache auth_cache;
+      proxy_cache_valid 200 10m;
+
+      # The following directive adds the cookie to the cache key
+      proxy_cache_key "$http_authorization$cookie_nginxauth";
+      # (Required) Set the URL and port for connecting to the LDAP server,
+      # Do not mix ldaps-style URL and X-Ldap-Starttls as it will not work.
+      proxy_set_header X-Ldap-URL "{{ ldap_server }}";
+      # Optional) Establish a TLS-enabled LDAP session after binding to the
+      # LDAP server.
+      # This is the 'proper' way to establish encrypted TLS connections, see
+      # http://www.openldap.org/faq/data/cache/185.html
+      # proxy_set_header X-Ldap-Starttls "true";
+
+      # (Required) Set the Base DN
+      # proxy_set_header X-Ldap-BaseDN   "ou=People,dc=malachiarts,dc=com";
+      proxy_set_header X-Ldap-BaseDN   "ou=Users,o=5c4bcb86d8af92375a16a825,dc=jumpcloud,dc=com";
+      # base-dns: ["dc=chromeriver,dc=com"]
+      # bind-dn: ou=People,dc=chromeriver,dc=com
+
+      # (Required) Set the Bind DN
+      # proxy_set_header X-Ldap-BindDN   "uid=grafana,ou=Robots,dc=malachiarts,dc=com";
+      proxy_set_header X-Ldap-BindDN   "uid=ldapservice,ou=Users,o=5c4bcb86d8af92375a16a825,dc=jumpcloud,dc=com";
+
+      # (Required) Set the Bind password
+      proxy_set_header X-Ldap-BindPass "{{ grafana.ldap_bind_pass }}";
+
+      # (Required) The following directives set the cookie name and pass
+      # it, respectively. They are required for cookie-based
+      # authentication. Comment them out if using HTTP basic
+      # authentication.
+      proxy_set_header X-CookieName "nginxauth";
+      proxy_set_header Cookie nginxauth=$cookie_nginxauth;
+
+      # (Required if using Microsoft Active Directory as the LDAP server)
+      # Set the LDAP template by uncommenting the following directive.
+      #proxy_set_header X-Ldap-Template "(sAMAccountName=%(username)s)";
+
+      # (May be required if using Microsoft Active Directory and
+      # getting "In order to perform this operation a successful bind
+      # must be completed on the connection." errror)
+      #proxy_set_header X-Ldap-DisableReferrals "true";
+
+      # (Optional if using OpenLDAP as the LDAP server) Set the LDAP
+      # template by uncommenting the following directive and replacing
+      # '(cn=%(username)s)' which is the default set in
+      # nginx-ldap-auth-daemon.py.
+      #proxy_set_header X-Ldap-Template "(cn=%(username)s)";
+      proxy_set_header X-Ldap-Template "(uid=%(username)s)";
+
+      # (Optional) Set the realm name, by uncommenting the following
+      # directive and replacing 'Restricted' which is the default set
+      # in nginx-ldap-auth-daemon.py.
+      #proxy_set_header X-Ldap-Realm "Restricted";
     }
   }
 }

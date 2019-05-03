@@ -1,0 +1,49 @@
+---
+- name: Create Directories for LDAP-Auth Daemon.
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  with_items:
+    - "{{ ldap_auth_config_path }}"
+    - "{{ ldap_auth_certs_path }}"
+    - "{{ ldap_auth_script_path }}"
+  notify:
+    - restart ldap-auth
+
+- name: Copy ldap.conf
+  copy:
+    src: ldap.conf
+    dest: "{{ ldap_auth_config_path }}/ldap.conf"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart ldap-auth
+
+# We had to modify the scripts in order to pass along the user to Grafana.
+# Instead of building a custom image, we're gonna to mount our versions of
+# the scripts to the container.
+- name: Copy scripts
+  copy:
+    src: "{{ item }}"
+    dest: "{{ ldap_auth_script_path }}//{{ item | basename }}"
+    owner: root
+    group: root
+    mode: 0755
+  with_fileglob:
+    - "ldap_auth/*.py"
+  notify:
+    - restart ldap-auth
+
+- name: Starting LDAP-Auth Daemon
+  docker_container:
+    name: "{{ ldap_auth_container_name }}"
+    image: "{{ ldap_auth_docker_image }}:{{ ldap_auth_docker_tag }}"
+    ports:
+      - "{{ ldap_auth_port }}:{{ ldap_auth_port }}"
+      - "{{ ldap_auth_login_port }}:{{ ldap_auth_login_port }}"
+    volumes:
+      - "{{ ldap_auth_config_path }}:{{ ldap_auth_config_path }}:ro"
+      - "{{ ldap_auth_script_path }}:/app:ro"
+    state: started
