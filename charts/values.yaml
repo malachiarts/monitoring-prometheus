@@ -162,7 +162,7 @@ kubeControllerManager:
 
   ## If your kube controller manager is not deployed as a pod, specify IPs it can be found on
   ##
-  endpoints: []
+  # endpoints: []
   # - 10.141.4.22
   # - 10.141.4.23
   # - 10.141.4.24
@@ -173,7 +173,7 @@ kubeControllerManager:
     port: 10252
     targetPort: 10252
     selector:
-      component: kube-controller-manager
+      k8s-app: kube-controller-manager
 
   serviceMonitor:
     ## Scrape interval. If not set, the Prometheus default scrape interval is used.
@@ -339,7 +339,7 @@ kubeScheduler:
 
   ## If your kube scheduler is not deployed as a pod, specify IPs it can be found on
   ##
-  endpoints: []
+  # endpoints: []
   # - 10.141.4.22
   # - 10.141.4.23
   # - 10.141.4.24
@@ -350,7 +350,7 @@ kubeScheduler:
     port: 10251
     targetPort: 10251
     selector:
-      component: kube-scheduler
+      k8s-app: kube-scheduler
 
   serviceMonitor:
     ## Scrape interval. If not set, the Prometheus default scrape interval is used.
