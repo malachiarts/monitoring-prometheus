@@ -1,13 +1,19 @@
+# RUNNING
+
+With these values for prometheus-operator, we're not installing Prometheus, Alertmanager or Grafana in our k8s cluster. We're running those outside the cluster since, if the cluster goes down, you won't be alerted! So our `values.yaml` is configured to just install kube-state-metrics, node-exporter and the prometheus-operator `shims` for kube-scheduler, kube-controller-manager, kubelt and etcd.
+
+```bash
 kubectl create -f monitoring-namespace.json
 helm tiller run -- helm install --debug --name=monitoring --namespace=monitoring --values=values.yaml stable/prometheus-operator
+```
 
-DEBUGGING
+# DEBUGGING
 
 When completed, you'll have these "shims" to specific Kubernetes
-endpoints. If the CLUSTER-IP column is "None", then it didn't work
+endpoints. If the ENDPOINTS column is "none", then it didn't work
 properly.
 
-```
+```bash
 $ k get endpoints -n kube-system
 NAME                                                 ENDPOINTS                                                           AGE
 coredns                                              10.233.120.21:53,10.233.80.45:53,10.233.120.21:53 + 3 more...       59d
@@ -29,7 +35,7 @@ to specify the IP addresses in our values.yaml file.
 
 However, scheduler and controller-manager are running as pods.
 
-```
+```bash
 $ k get pods -n kube-system | egrep '(controller-manager|scheduler)'
 kube-controller-manager-ip-10-77-1-121.us-west-2.compute.internal   1/1     Running   80         73d
 kube-controller-manager-ip-10-77-1-5.us-west-2.compute.internal     1/1     Running   44         95d
@@ -42,7 +48,7 @@ kube-scheduler-ip-10-77-2-208.us-west-2.compute.internal            1/1     Runn
 So why aren't they showing up? In our `values.yaml` file, we have the
 following:
 
-```
+```yaml
   service:
     port: 10252
     targetPort: 10252
@@ -52,13 +58,13 @@ following:
 
 Lets test the selector:
 
-```
+```bash
 $ k describe pods -n kube-system -l component=kube-controller-manager
 ```
 
 And nothing comes back. Now it's time to check the labels.
 
-```
+```bash
 $ k describe pod -n kube-system kube-controller-manager-ip-10-77-1-5.us-west-2.compute.internal | grep Label
 Labels:             k8s-app=kube-controller-manager
 ```
@@ -66,7 +72,7 @@ Labels:             k8s-app=kube-controller-manager
 Right there we see that the label is k8s-app and not component. To
 verify:
 
-```
+```bash
 $ k get pods -l k8s-app=kube-controller-manager -n kube-system
 kube-controller-manager-ip-10-77-1-121.us-west-2.compute.internal   1/1     Running   80         73d
 kube-controller-manager-ip-10-77-1-5.us-west-2.compute.internal     1/1     Running   44         95d
@@ -75,7 +81,7 @@ kube-controller-manager-ip-10-77-2-208.us-west-2.compute.internal   1/1     Runn
 
 Perfect! Now we'll change our `values.yaml` file so it looks like:
 
-```
+```yaml
   service:
     port: 10252
     targetPort: 10252
@@ -90,9 +96,13 @@ Update our chart deployment and we should start seeing endpoints for
 controller-manager which should mean that data will start to flow
 through Prometheus.
 
+```bash
+$ helm tiller run -- helm upgrade --values=values.yaml monitoring stable/prometheus-operator
+```
+
 To verify:
 
-```
+```bash
 $ k get endpoints -n kube-system
 NAME                                                 ENDPOINTS                                                           AGE
 coredns                                              10.233.120.21:53,10.233.80.45:53,10.233.120.21:53 + 3 more...       59d
