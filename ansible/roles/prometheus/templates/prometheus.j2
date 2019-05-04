@@ -285,7 +285,7 @@ scrape_configs:
 # http://localhost:8001/api/v1/namespaces/kube-system/services/prometheus-operator-prod-kube-controller-manager:10252/proxy/metrics
 # ControllerManager is accessed on port 10252. could probably hit it in the same way as kubelet.
 - job_name: kube-controller-manager
-  scheme: https
+  scheme: http
   kubernetes_sd_configs:
     - api_server: {{ kubernetes_server }}:{{ kubernetes_port }}
       role: endpoints
@@ -310,7 +310,7 @@ scrape_configs:
 # http://localhost:8001/api/v1/namespaces/kube-system/services/prometheus-operator-prod-kube-scheduler:10251/proxy/metrics
 # scheduler is accessed on port 10251. could probably hit it in the same way as kubelet.
 - job_name: kube-scheduler
-  scheme: https
+  scheme: http
   kubernetes_sd_configs:
     - api_server: {{ kubernetes_server }}:{{ kubernetes_port }}
       role: endpoints
