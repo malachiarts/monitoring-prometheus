@@ -1,6 +1,6 @@
 # RUNNING
 
-With these values for prometheus-operator, we're not installing Prometheus, Alertmanager or Grafana in our k8s cluster. We're running those outside the cluster since, if the cluster goes down, you won't be alerted! So our `values.yaml` is configured to just install kube-state-metrics, node-exporter and the prometheus-operator `shims` for kube-scheduler, kube-controller-manager, kubelt and etcd.
+With these values for prometheus-operator, we're not installing Prometheus, Alertmanager or Grafana in our k8s cluster. We're running those outside the cluster since, if the cluster goes down, you won't be alerted! So our `values.yaml` is configured to just install kube-state-metrics, node-exporter and the prometheus-operator `shims` for kube-scheduler, kube-controller-manager, kubelt and etcd. May be able to turn off coredns since the endpoints are already discovered.
 
 ```bash
 kubectl create -f monitoring-namespace.json
