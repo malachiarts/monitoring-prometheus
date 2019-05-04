@@ -301,7 +301,7 @@ scrape_configs:
     insecure_skip_verify: false
   relabel_configs:
   - action: keep
-    regex: kube-system;prometheus-operator-prod-kube-controller-manager;http-metrics
+    regex: kube-system;monitoring-prometheus-oper-kube-controller-manager;http-metrics
     source_labels:
     - __meta_kubernetes_namespace
     - __meta_kubernetes_service_name
@@ -326,7 +326,7 @@ scrape_configs:
     insecure_skip_verify: false
   relabel_configs:
   - action: keep
-    regex: kube-system;prometheus-operator-prod-kube-scheduler;http-metrics
+    regex: kube-system;monitoring-prometheus-oper-kube-scheduler;http-metrics
     source_labels:
     - __meta_kubernetes_namespace
     - __meta_kubernetes_service_name
@@ -351,7 +351,7 @@ scrape_configs:
     insecure_skip_verify: false
   relabel_configs:
   - action: keep
-    regex: kube-system;kubelet;https-metrics
+    regex: kube-system;monitoring-prometheus-oper-kubelet;https-metrics
     source_labels:
     - __meta_kubernetes_namespace
     - __meta_kubernetes_service_name
