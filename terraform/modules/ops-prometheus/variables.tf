@@ -10,7 +10,7 @@ variable "tychocluster" {}
 variable "public_domain" {}
 
 variable "prometheus_instance_type" {
-  default = "t2.xlarge"
+  default = "t3.xlarge"
 }
 
 variable "prometheus_data_device_name" {
