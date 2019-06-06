@@ -19,7 +19,7 @@
   when: _generate_key is succeeded
 
 - name: Sign Prometheus certificate
-  command: "openssl x509 -req -in {{ csr_file_path }} -CA {{ k8s_cert_path }}/ca.pem -CAkey {{ k8s_cert_path }}/ca-key.pem -CAcreateserial -out {{ crt_file_path }} -days {{ cert_length_days }}"
+  command: "openssl x509 -req -in {{ csr_file_path }} -CA {{ k8s_cert_path }}/ca.crt -CAkey {{ k8s_cert_path }}/ca.key -CAcreateserial -out {{ crt_file_path }} -days {{ cert_length_days }}"
   args:
     creates: "{{ crt_file_path }}"
   when: _generate_csr is succeeded
@@ -51,7 +51,7 @@
 
 - name: Fetch pem
   fetch:
-    src: "{{ k8s_cert_path }}/ca.pem"
+    src: "{{ k8s_cert_path }}/ca.crt"
     dest: /tmp/
     flat: yes
 
@@ -74,6 +74,6 @@
     - name: Local CA file permissions
       become: false
       file:
-        path: "/tmp/ca.pem"
+        path: "/tmp/ca.crt"
         mode: 0400
       delegate_to: localhost

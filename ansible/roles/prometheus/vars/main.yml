@@ -1,5 +1,6 @@
 ---
-instance: tycho
+cluster: tycho
+cluster_type: test
 domain: majustfortesting.com
 # Edition can be one of: 'ce' (Community Edition) or 'ee' (Enterprise Edition).
 docker_version: '18.06.1'
@@ -9,7 +10,8 @@ docker_package_state: present
 
 # k8s
 # instead of 'live' it should be {{ kubotancluster }}.
-kubernetes_server: "{{ instance }}-api-test.{{ instance }}.{{ domain }}"
+kubernetes_server: "{{ cluster }}-api-{{ cluster_type }}.{{ cluster }}.{{ domain }}"
+# kubernetes_server: "ip-10-70-101-8.us-west-2.compute.internal"
 kubernetes_port: 6443
 
 # Prometheus runs as 65534. So to keep things simple permission-wise,
@@ -19,7 +21,7 @@ app_user: 65534
 app_group: 65534
 
 # Prometheus
-prometheus_fqdn: prom-{{ instance }}-test.{{ domain }}
+prometheus_fqdn: prom-{{ cluster }}-{{ cluster_type }}.{{ domain }}
 prometheus_docker_image: prom/prometheus
 prometheus_docker_tag: v2.7.1
 prometheus_container_name: prometheus
