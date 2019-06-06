@@ -23,9 +23,12 @@
     group: "{{ app_group }}"
     mode: 0400
   with_items:
-    - { src: "k8s.{{ instance }}.ca.pem", dest: ca.pem }
-    - { src: "k8s.{{ instance }}.prometheus.crt", dest: prometheus.crt }
-    - { src: "k8s.{{ instance }}.prometheus.key", dest: prometheus.key }
+    - { src: "k8s.{{ cluster }}.ca.pem", dest: ca.pem }
+    - { src: "k8s.{{ cluster }}.prometheus.crt", dest: prometheus.crt }
+    - { src: "k8s.{{ cluster }}.prometheus.key", dest: prometheus.key }
+    - { src: "k8s.{{ cluster }}.ca-etcd.pem", dest: ca-etcd.pem }
+    - { src: "k8s.{{ cluster }}.prometheus-etcd.crt", dest: prometheus-etcd.crt }
+    - { src: "k8s.{{ cluster }}.prometheus-etcd.key", dest: prometheus-etcd.key }
   notify:
     - "{{ prometheus_restart_handler }}"
 

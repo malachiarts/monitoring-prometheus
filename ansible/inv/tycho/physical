@@ -13,3 +13,4 @@ prom1.tycho.majustfortesting.com
 
 [kubernetesmaster]
 master0.tycho.majustfortesting.com
+# 10.70.101.8

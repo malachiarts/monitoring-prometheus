@@ -54,6 +54,7 @@ scrape_configs:
     - __meta_kubernetes_namespace
     - __meta_kubernetes_service_name
     - __meta_kubernetes_endpoint_port_name
+
 - job_name: kubernetes-nodes
   scheme: https
   kubernetes_sd_configs:
@@ -128,7 +129,7 @@ scrape_configs:
   scheme: https
   kubernetes_sd_configs:
     - api_server: {{ kubernetes_server }}:{{ kubernetes_port }}
-      role: endpoints
+      role: service
       tls_config:
         ca_file: {{ certificate_path }}/ca.pem
         cert_file: {{ certificate_path }}/prometheus.crt
@@ -171,6 +172,7 @@ scrape_configs:
     # source_labels:
       # - __meta_kubernetes_pod_node_name
     # target_label: kubernetes_node
+
 - honor_labels: true
   job_name: prometheus-pushgateway
   kubernetes_sd_configs:
@@ -191,6 +193,7 @@ scrape_configs:
     regex: pushgateway
     source_labels:
     - __meta_kubernetes_service_annotation_prometheus_io_probe
+
 - job_name: kubernetes-services
   scheme: https
   kubernetes_sd_configs:
@@ -231,6 +234,7 @@ scrape_configs:
   - source_labels:
     - __meta_kubernetes_service_name
     target_label: kubernetes_name
+
 - job_name: kubernetes-pods
   scheme: https
   kubernetes_sd_configs:
@@ -348,7 +352,7 @@ scrape_configs:
     ca_file: {{ certificate_path }}/ca.pem
     cert_file: {{ certificate_path }}/prometheus.crt
     key_file: {{ certificate_path }}/prometheus.key
-    insecure_skip_verify: false
+    insecure_skip_verify: true
   relabel_configs:
   - action: keep
     regex: kube-system;monitoring-prometheus-oper-kubelet;https-metrics
@@ -356,6 +360,51 @@ scrape_configs:
     - __meta_kubernetes_namespace
     - __meta_kubernetes_service_name
     - __meta_kubernetes_endpoint_port_name
+
+- job_name: etcd
+  scheme: https
+  kubernetes_sd_configs:
+    - api_server: {{ kubernetes_server }}:{{ kubernetes_port }}
+      role: endpoints
+      tls_config:
+        ca_file: {{ certificate_path }}/ca.pem
+        cert_file: {{ certificate_path }}/prometheus.crt
+        key_file: {{ certificate_path }}/prometheus.key
+        insecure_skip_verify: false
+  tls_config:
+    ca_file: {{ certificate_path }}/ca-etcd.pem
+    cert_file: {{ certificate_path }}/prometheus-etcd.crt
+    key_file: {{ certificate_path }}/prometheus-etcd.key
+    insecure_skip_verify: false
+  relabel_configs:
+  - action: keep
+    regex: kube-system;monitoring-prometheus-oper-kube-etcd;http-metrics
+    source_labels:
+    - __meta_kubernetes_namespace
+    - __meta_kubernetes_service_name
+    - __meta_kubernetes_endpoint_port_name
+
+- job_name: metrics-server
+  scheme: https
+  kubernetes_sd_configs:
+    - api_server: tycho-api-test.tycho.majustfortesting.com:6443
+      role: endpoints
+      tls_config:
+        ca_file: /etc/kubernetes/ssl/ca.pem
+        cert_file: /etc/kubernetes/ssl/prometheus.crt
+        key_file: /etc/kubernetes/ssl/prometheus.key
+        insecure_skip_verify: false
+  tls_config:
+    ca_file: /etc/kubernetes/ssl/ca.pem
+    cert_file: /etc/kubernetes/ssl/prometheus.crt
+    key_file: /etc/kubernetes/ssl/prometheus.key
+    insecure_skip_verify: false
+  relabel_configs:
+  - action: keep
+    regex: kube-system;metrics-server
+    source_labels:
+    - __meta_kubernetes_namespace
+    - __meta_kubernetes_service_name
 
 alerting:
   alertmanagers:
