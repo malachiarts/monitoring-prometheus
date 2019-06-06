@@ -1,5 +1,9 @@
 kubectl create -f monitoring-namespace.json
+# https://github.com/helm/charts/issues/9941#issuecomment-447844259
+kubectl apply -f https://raw.githubusercontent.com/coreos/prometheus-operator/master/example/prometheus-operator-crd/prometheusrule.crd.yaml
+# prometheusOperator.createCustomResource= false
 helm tiller run -- helm install --debug --name=monitoring --namespace=monitoring --values=values.yaml stable/prometheus-operator
+
 
 DEBUGGING
 
