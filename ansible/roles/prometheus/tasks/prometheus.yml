@@ -43,9 +43,10 @@
       group: root
       mode: 0644
     with_items:
-      - { src: prometheus.j2, dest: prometheus.yml }
-      - { src: alerting.j2,   dest: alerting.yml }
-      - { src: alerts.j2,     dest: alerts.yml }
+      - { src: prometheus.j2,   dest: prometheus.yml }
+      - { src: alerting.j2,     dest: alerting.yml }
+      - { src: alerts.j2,       dest: alerts.yml }
+      - { src: etcd3-alerts.j2, dest: etcd3-alerts.yml }
     notify:
       - "{{ prometheus_restart_handler }}"
   - name: copy prod specific alerts

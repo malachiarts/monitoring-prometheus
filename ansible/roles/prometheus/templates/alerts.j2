@@ -521,7 +521,7 @@ groups:
       message: KubeStateMetrics has disappeared from Prometheus target discovery.
       runbook_url: https://github.com/kubernetes-monitoring/kubernetes-mixin/tree/master/runbook.md#alert-name-kubestatemetricsdown
     expr: |
-      absent(up{app="prometheus",component="kube-state-metrics"} == 1)
+      absent(up{app="kube-state-metrics",job="kubernetes-service-endpoints"} == 1)
     for: 15m
     labels:
       severity: critical
@@ -1015,132 +1015,6 @@ groups:
     expr: |
       {% raw %}increase(prometheus_target_scrapes_sample_duplicate_timestamp_total{job="{{ $prometheusJob }}"}[5m]) > 0{% endraw %}
 
-    for: 10m
-    labels:
-      severity: warning
-- name: etcd3_alert.rules
-  rules:
-  - alert: {{ cluster }} InsufficientMembers
-    annotations:
-      description: If one more etcd member goes down the cluster will be unavailable
-      summary: etcd cluster insufficient members
-    expr: count(up{job="kube-etcd"} == 0) > (count(up{job="kube-etcd"}) / 2 - 1)
-    for: 3m
-    labels:
-      severity: critical
-  - alert: {{ cluster }} NoLeader
-    annotations:
-      description: {% raw %}etcd member {{`{{ $labels.instance }}`}} has no leader{% endraw %}
-
-      summary: etcd member has no leader
-    expr: etcd_server_has_leader{job="kube-etcd"} == 0
-    for: 1m
-    labels:
-      severity: critical
-  - alert: {{ cluster }} HighNumberOfLeaderChanges
-    annotations:
-      description: {% raw %}etcd instance {{`{{ $labels.instance }}`}} has seen {{`{{ $value
-        }}`}} leader changes within the last hour{% endraw %}
-
-      summary: a high number of leader changes within the etcd cluster are happening
-    expr: increase(etcd_server_leader_changes_seen_total{job="kube-etcd"}[1h]) > 3
-    labels:
-      severity: warning
-  - alert: {{ cluster }} HighNumberOfFailedGRPCRequests
-    annotations:
-      description: {% raw %}'{{`{{ $value }}`}}% of requests for {{`{{ $labels.grpc_method
-        }}`}} failed on etcd instance {{`{{ $labels.instance }}`}}'{% endraw %}
-
-      summary: a high number of gRPC requests are failing
-    expr: 100 * (sum(rate(grpc_server_handled_total{grpc_code!="OK",job="kube-etcd"}[5m]))
-      BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total{job="kube-etcd"}[5m]))
-      BY (grpc_service, grpc_method)) > 1
-    for: 10m
-    labels:
-      severity: warning
-  - alert: {{ cluster }} HighNumberOfFailedGRPCRequests
-    annotations:
-      description: {% raw %}'{{`{{ $value }}`}}% of requests for {{`{{ $labels.grpc_method
-        }}`}} failed on etcd instance {{`{{ $labels.instance }}`}}'{% endraw %}
-
-      summary: a high number of gRPC requests are failing
-    expr: 100 * (sum(rate(grpc_server_handled_total{grpc_code!="OK",job="kube-etcd"}[5m]))
-      BY (grpc_service, grpc_method) / sum(rate(grpc_server_handled_total{job="kube-etcd"}[5m]))
-      BY (grpc_service, grpc_method)) > 5
-    for: 5m
-    labels:
-      severity: critical
-  - alert: {{ cluster }} GRPCRequestsSlow
-    annotations:
-      description: {% raw %}on etcd instance {{`{{ $labels.instance }}`}} gRPC requests to
-        {{`{{ $labels.grpc_method }}`}} are slow{% endraw %}
-
-      summary: slow gRPC requests
-    expr: histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{job="kube-etcd",grpc_type="unary"}[5m]))
-      by (grpc_service, grpc_method, le)) > 0.15
-    for: 10m
-    labels:
-      severity: critical
-  - expr: process_open_fds / process_max_fds
-    record: instance:fd_utilization
-  - alert: {{ cluster }} FdExhaustionClose
-    annotations:
-      description: {% raw %}'{{`{{ $labels.job }}`}} instance {{`{{ $labels.instance }}`}}
-        will exhaust its file descriptors soon'{% endraw %}
-
-      summary: file descriptors soon exhausted
-    expr: predict_linear(instance:fd_utilization[1h], 3600 * 4) > 1
-    for: 10m
-    labels:
-      severity: warning
-  - alert: {{ cluster }} FdExhaustionClose
-    annotations:
-      description: {% raw %}'{{`{{ $labels.job }}`}} instance {{`{{ $labels.instance }}`}}
-        will exhaust its file descriptors soon'{% endraw %}
-
-      summary: file descriptors soon exhausted
-    expr: predict_linear(instance:fd_utilization[10m], 3600) > 1
-    for: 10m
-    labels:
-      severity: critical
-  - alert: {{ cluster }} EtcdMemberCommunicationSlow
-    annotations:
-      description: {% raw %}etcd instance {{`{{ $labels.instance }}`}} member communication
-        with {{`{{ $labels.To }}`}} is slow{% endraw %}
-
-      summary: etcd member communication is slow
-    expr: histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket[5m]))
-      > 0.15
-    for: 10m
-    labels:
-      severity: warning
-  - alert: {{ cluster }} HighNumberOfFailedProposals
-    annotations:
-      description: {% raw %}etcd instance {{`{{ $labels.instance }}`}} has seen {{`{{ $value
-        }}`}} proposal failures within the last hour{% endraw %}
-
-      summary: a high number of proposals within the etcd cluster are failing
-    expr: increase(etcd_server_proposals_failed_total{job="kube-etcd"}[1h]) > 5
-    labels:
-      severity: warning
-  - alert: {{ cluster }} HighFsyncDurations
-    annotations:
-      description: {% raw %}etcd instance {{`{{ $labels.instance }}`}} fync durations are high{% endraw %}
-
-      summary: high fsync durations
-    expr: histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m]))
-      > 0.5
-    for: 10m
-    labels:
-      severity: warning
-  - alert: {{ cluster }} HighCommitDurations
-    annotations:
-      description: {% raw %}etcd instance {{`{{ $labels.instance }}`}} commit durations are
-        high{% endraw %}
-
-      summary: high commit durations
-    expr: histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket[5m]))
-      > 0.25
     for: 10m
     labels:
       severity: warning
