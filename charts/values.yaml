@@ -170,10 +170,10 @@ kubeControllerManager:
   ## If using kubeControllerManager.endpoints only the port and targetPort are used
   ##
   service:
-    port: 10252
-    targetPort: 10252
+    # port: 10257
+    # targetPort: 10257
     selector:
-      k8s-app: kube-controller-manager
+      component: kube-controller-manager
 
   serviceMonitor:
     ## Scrape interval. If not set, the Prometheus default scrape interval is used.
@@ -210,7 +210,7 @@ coreDns:
     port: 9153
     targetPort: 9153
     selector:
-      k8s-app: kube-dns
+      k8s-app: coredns
   serviceMonitor:
     ## Scrape interval. If not set, the Prometheus default scrape interval is used.
     ##
@@ -270,9 +270,9 @@ kubeEtcd:
   ## If your etcd is not deployed as a pod, specify IPs it can be found on
   ##
   endpoints:
-    - 10.77.1.69 # tycho-etcd-0
-    - 10.77.2.22 # tycho-etcd-1
-    - 10.77.1.116 # tycho-etcd-2
+    - 10.70.101.109 # tycho-etcd-0
+    - 10.70.102.205 # tycho-etcd-1
+    - 10.70.101.122 # tycho-etcd-2
   # - 10.104.12.12 # c4-live-0
   # - 10.104.13.169 # c4-live-1
   # - 10.104.11.83 # c4-live-2
@@ -347,10 +347,10 @@ kubeScheduler:
   ## If using kubeScheduler.endpoints only the port and targetPort are used
   ##
   service:
-    port: 10251
-    targetPort: 10251
+    # port: 10256
+    # targetPort: 10256
     selector:
-      k8s-app: kube-scheduler
+      component: kube-scheduler
 
   serviceMonitor:
     ## Scrape interval. If not set, the Prometheus default scrape interval is used.
@@ -506,7 +506,7 @@ prometheusOperator:
 
   ## Deploy CRDs used by Prometheus Operator.
   ##
-  createCustomResource: true
+  createCustomResource: false
 
   ## Customize CRDs API Group
   crdApiGroup: monitoring.coreos.com
