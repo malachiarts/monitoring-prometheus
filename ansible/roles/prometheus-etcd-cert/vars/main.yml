@@ -1,0 +1,14 @@
+---
+instance: tycho
+subject: /CN=etcd
+etcd_cert_path: /etc/ssl/etcd/ssl
+cert_path: /root/certs
+cert_length_days: 3650
+
+key_file: "k8s.{{ instance }}.prometheus-etcd.key"
+csr_file: "k8s.{{ instance }}.prometheus-etcd.csr"
+crt_file: "k8s.{{ instance }}.prometheus-etcd.crt"
+
+key_file_path: "{{ cert_path }}/{{ key_file }}"
+csr_file_path: "{{ cert_path }}/{{ csr_file }}"
+crt_file_path: "{{ cert_path }}/{{ crt_file }}"

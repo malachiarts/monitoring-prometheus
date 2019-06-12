@@ -1,0 +1,87 @@
+---
+- name: Create cert directory
+  file:
+    path: "{{ cert_path }}"
+    state: directory
+    mode: 0750
+
+- name: Upload openssl.conf file
+  copy:
+    src: files/openssl.conf
+    dest: "{{ cert_path }}"
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Generate Prometheus key
+  command: "openssl genrsa -out {{ key_file_path }} 2048"
+  args:
+    creates: "{{ key_file_path }}"
+  register: _generate_key
+
+- name: Generate Prometheus CSR
+  command: "openssl req -new -key {{ key_file_path }} -out {{ csr_file_path }} -subj '{{ subject }}' -config openssl.conf"
+  args:
+    creates: "{{ csr_file_path }}"
+  register: _generate_csr
+  when: _generate_key is succeeded
+
+- name: Sign Prometheus certificate
+  command: "openssl x509 -req -in {{ csr_file_path }} -CA {{ etcd_cert_path }}/ca.pem -CAkey {{ etcd_cert_path }}/ca-key.pem -CAcreateserial -out {{ crt_file_path }} -days {{ cert_length_days }} -extensions v3_req -extfile openssl.conf"
+  args:
+    creates: "{{ crt_file_path }}"
+  when: _generate_csr is succeeded
+
+# not using handler because want it done ASAP.
+- name: Set file permissions
+  file:
+    path: "{{ cert_path }}"
+    mode: 0400
+    recurse: true
+
+- name: Set dir permissions
+  file:
+    path: "{{ cert_path }}"
+    mode: 0750
+
+# fetch doesn't work with_items?
+- name: Fetch key
+  fetch:
+    src: "{{ key_file_path }}"
+    dest: /tmp/
+    flat: yes
+
+- name: Fetch cert
+  fetch:
+    src: "{{ crt_file_path }}"
+    dest: /tmp/
+    flat: yes
+
+- name: Fetch pem
+  fetch:
+    src: "{{ etcd_cert_path }}/ca.pem"
+    dest: /tmp/ca-etcd.pem
+    flat: yes
+
+- name: Set file permissions
+  block:
+    - name: Local key file permissions
+      become: false
+      file:
+        path: "/tmp/{{ key_file }}"
+        mode: 0400
+      delegate_to: localhost
+
+    - name: Local cert file permissions
+      become: false
+      file:
+        path: "/tmp/{{ crt_file }}"
+        mode: 0400
+      delegate_to: localhost
+
+    - name: Local CA file permissions
+      become: false
+      file:
+        path: "/tmp/ca-etcd.pem"
+        mode: 0400
+      delegate_to: localhost

@@ -1,0 +1,8 @@
+---
+- hosts: etcd0
+  become: true
+  become_user: root
+  become_method: sudo
+  user: ubuntu
+  roles:
+    - prometheus-etcd-cert

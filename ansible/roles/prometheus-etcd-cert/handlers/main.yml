@@ -1,0 +1,21 @@
+---
+- name: Set privileges on certs
+  become: true
+  file:
+    path: "{{ cert_path }}"
+    recurse: true
+    owner: root
+    group: root
+    mode: 0400
+  listen: "certs generated"
+
+- name: Set privileges on certs directory
+  become: true
+  file:
+    path: "{{ cert_path }}"
+    state: directory
+    recurse: false
+    owner: root
+    group: root
+    mode: 0700
+  listen: "certs generated"
